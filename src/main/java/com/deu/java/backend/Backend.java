@@ -1,16 +1,12 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- */
-
 package com.deu.java.backend;
+import io.javalin.Javalin;
 
-/**
- *
- * @author anstn
- */
 public class Backend {
 
     public static void main(String[] args) {
-        System.out.println("Hello World!");
+        // Javalin 서버 설정
+        var app = Javalin.create(/*config*/)
+            .get("/", ctx -> ctx.result("Hello World"))
+            .start(7070);
     }
 }

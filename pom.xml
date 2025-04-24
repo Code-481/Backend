@@ -10,4 +10,11 @@
         <maven.compiler.release>17</maven.compiler.release>
         <exec.mainClass>com.deu.java.backend.Backend</exec.mainClass>
     </properties>
+    <dependencies>
+        <dependency>
+            <groupId>io.javalin</groupId>
+            <artifactId>javalin</artifactId>
+            <version>6.6.0</version>
+        </dependency>
+    </dependencies> 
 </project>
