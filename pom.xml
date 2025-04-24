@@ -27,6 +27,7 @@
     </dependencies>
     <!-- 아래 있는거는 건들지 마세요. INMD -->
     <build>
+        <finalName>server_start</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

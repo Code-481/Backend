@@ -5,6 +5,7 @@
   <artifactId>Backend</artifactId>
   <version>1.0-SNAPSHOT</version>
   <build>
+    <finalName>server_start</finalName>
     <plugins>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
