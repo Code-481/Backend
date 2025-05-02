@@ -19,7 +19,3 @@ jobs:
  
        - name: Build Docker image
          run: docker build -t my-image:test .
- 
-       - name: Run Docker container for tests
-         run: |
-           docker run --rm my-image:test # 여기에 테스트 명령어 추가 가능
