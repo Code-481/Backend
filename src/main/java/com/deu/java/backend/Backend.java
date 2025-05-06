@@ -12,13 +12,11 @@ import com.deu.java.backend.Bus.service.BusServiceImpl;
 import jakarta.persistence.EntityManager;
 
 public class Backend {
-
-    public static void main(String[] args) {
-        Javalin app = Javalin.create().start(7070);
+    public static Javalin createApp() {
+        Javalin app = Javalin.create();
 
         app.before(ctx -> {
-            EntityManager em;
-            em = JpaUtil.getEntityManagerFactory().createEntityManager();
+            EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
             ctx.attribute("em", em);
         });
 
@@ -37,6 +35,17 @@ public class Backend {
             controller.handleGetBusInfo(ctx);
         });
 
+        app.exception(Exception.class, (e, ctx) -> {
+            e.printStackTrace(); // 로그 기록
+            ctx.status(500).result("알 수 없는 오류가 발생했습니다.");
+        });
+
+        return app;
+    }
+    
+    public static void main(String[] args) {
+        Javalin app = createApp();
+        app.start(7070);
         Runtime.getRuntime().addShutdownHook(new Thread(JpaUtil::close));
     }
 }
