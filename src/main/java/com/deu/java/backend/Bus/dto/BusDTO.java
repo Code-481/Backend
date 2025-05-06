@@ -33,6 +33,12 @@ public class BusDTO {
         public double getLng() { return lng; }
     }
 
+    public BusDTO() { }
+    public BusDTO(Long routeId, List<BusInfo> buses) {
+        this.routeId = routeId;
+        this.buses = buses;
+    }
+
     public Long getRouteId() {
         return routeId;
     }
