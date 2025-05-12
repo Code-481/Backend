@@ -44,7 +44,8 @@ public class BusControllerTest {
     void testHandleGetBusInfo_missingRouteId() {
         // given
         when(mockCtx.queryParam("routeId")).thenReturn(null);
-
+        when(mockCtx.status(400)).thenReturn(mockCtx);
+        
         // when
         controller.handleGetBusInfo(mockCtx);
 
