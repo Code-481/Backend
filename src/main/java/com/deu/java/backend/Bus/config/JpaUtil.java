@@ -28,7 +28,6 @@ public class JpaUtil {
 
             System.out.println("JDBC URL: " + jdbcUrl);
             System.out.println("JDBC USER: " + jdbcUser);
-            // 비밀번호는 보안상 출력하지 않는 것이 좋습니다
 
             if (jdbcUrl == null || jdbcUser == null || jdbcPassword == null) {
                 throw new RuntimeException("필수 데이터베이스 환경 변수가 설정되지 않았습니다.");
@@ -44,6 +43,10 @@ public class JpaUtil {
             properties.put("hibernate.hbm2ddl.auto", "create-drop");
             properties.put("hibernate.show_sql", "false");
             properties.put("hibernate.format_sql", "false");
+
+            //JTA
+            properties.put("hibernate.transaction.factory_class", "org.hibernate.transaction.JDBCTransactionFactory"); // JDBC 트랜잭션 예시
+            properties.put("hibernate.transaction.jta.platform", "org.hibernate.engine.transaction.jta.platform.internal.JBossTransactionManagerLookup");
 
             return Persistence.createEntityManagerFactory("bus-unit", properties);
         } catch (Exception e) {
