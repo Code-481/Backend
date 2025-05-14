@@ -14,7 +14,6 @@ public class BusArrivalController {
     }
 
     public void handleGetArrivalInfo(Context ctx) {
-        System.out.println("🛬 stopId5: "); // 여기는 들어오냐?
         String stopId = ctx.queryParam("stopId");
         List<BusArrivalDto> busArrivals = busArrivalService.getBusArrivalsByStopId(stopId);
 

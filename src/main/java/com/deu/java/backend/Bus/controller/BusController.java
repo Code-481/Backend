@@ -12,7 +12,7 @@ public class BusController {
     }
 
     public void handleGetBusInfo(Context ctx) {
-        String routeId = ctx.queryParam("routeId");
+        String routeId = ctx.pathParam("routeId");
         if (routeId == null || routeId.isEmpty()) {
             ctx.status(400).json(new Error("Missing routeId"));
             return;
