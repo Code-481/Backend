@@ -96,7 +96,7 @@ public class Backend {
 
     public static void main(String[] args) {
         Javalin app = createApp();
-        app.start(7070);
+        app.start(7000);
         Runtime.getRuntime().addShutdownHook(new Thread(JpaUtil::close));
     }
 }
