@@ -40,7 +40,7 @@ public class JpaUtil {
             properties.put("jakarta.persistence.jdbc.password", jdbcPassword);
 
             // SQL
-            properties.put("hibernate.hbm2ddl.auto", "create-drop");
+            properties.put("hibernate.hbm2ddl.auto", "update");
             properties.put("hibernate.show_sql", "false");
             properties.put("hibernate.format_sql", "false");
 
