@@ -10,8 +10,8 @@ public class BusArrivalServiceImpl implements BusArrivalService {
 
     private final BusanBimsApiClient bimsApiClient;
 
-    public BusArrivalServiceImpl() {
-        this.bimsApiClient = new BusanBimsApiClient();
+    public BusArrivalServiceImpl(BusanBimsApiClient bimsApiClient) {
+        this.bimsApiClient = bimsApiClient;
     }
 
     @Override
@@ -20,8 +20,9 @@ public class BusArrivalServiceImpl implements BusArrivalService {
         List<BusArrivalDto> busArrivals = new ArrayList<>();
         
         try {
-            BusArrivalDto arrivalDto = bimsApiClient.fetchArrivalInfo(stopId);
-            busArrivals.add(arrivalDto);
+            List<BusArrivalDto> arrivalDto = bimsApiClient.fetchArrivalInfo(stopId);
+            busArrivals.addAll(arrivalDto);
+            
         } catch (RuntimeException e) {
            
             System.err.println("버스 도착 정보 호출 실패: " + e.getMessage()); 
