@@ -1,4 +1,4 @@
-package com.deu.java.backend.bus.client;
+package com.deu.java.backend.Bus.client;
 
 import com.deu.java.backend.Bus.dto.BusArrivalDto;
 import io.github.cdimascio.dotenv.Dotenv;

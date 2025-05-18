@@ -8,16 +8,14 @@ import com.deu.java.backend.Bus.config.JpaUtil;
 import com.deu.java.backend.Bus.controller.BusController;
 import com.deu.java.backend.Bus.controller.BusArrivalController;
 import com.deu.java.backend.Bus.service.BusArrivalService;
-import com.deu.java.backend.Bus.service.BusService;
 import com.deu.java.backend.Bus.service.BusServiceImpl;
 import com.deu.java.backend.Bus.service.BusArrivalServiceImpl;
-import com.deu.java.backend.Bus.repository.BusRepository;
 import com.deu.java.backend.Bus.repository.BusRepositoryImpl;
 import com.deu.java.backend.Bus.service.BusServiceFactory;
 import com.deu.java.backend.Festival.controller.FestivalController;
 import com.deu.java.backend.Festival.service.FestivalService;
 import com.deu.java.backend.Festival.service.FestivalServiceImpl;
-import com.deu.java.backend.bus.client.BusanBimsApiClient;
+import com.deu.java.backend.Bus.client.BusanBimsApiClient;
 
 public class Backend {
 
