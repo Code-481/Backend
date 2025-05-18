@@ -57,48 +57,54 @@ public class BusanBimsApiClient {
             // JSON 구조 탐색
             JSONObject response = jsonResponse.getJSONObject("response");
             JSONObject body = response.getJSONObject("body");
-            JSONObject items = body.getJSONObject("items");
-
-            // items가 배열인지 단일 객체인지 확인
-            Object itemObj = items.get("item");
-            JSONArray itemArray;
-            if (itemObj instanceof JSONArray) {
-                itemArray = (JSONArray) itemObj;
-            } else {
-                // 단일 항목인 경우 배열로 변환
-                itemArray = new JSONArray();
-                itemArray.put(itemObj);
-            }
-
-            // 각 항목 처리
-            for (int i = 0; i < itemArray.length(); i++) {
-                JSONObject item = itemArray.getJSONObject(i);
-
-                // 필요한 데이터 추출
-                String busNo = item.optString("lineno", "");
-
-                // min1 키가 있는지 확인
-                if (item.has("min1")) {
-                    item.put("arrivalStatus", "운행중");
-                    Map<String, Object> allData = new HashMap<>();
-                    java.util.Iterator<String> keys = item.keys();
-                    while (keys.hasNext()) {
-                        String key = keys.next();
-                        allData.put(key, item.get(key));
-                    }
+            
+            // 결과가 없는 경우 처리
+            if (body.has("items") && !body.isNull("items")) {
+                JSONObject items = body.getJSONObject("items");
+                
+                // items가 배열인지 단일 객체인지 확인
+                Object itemObj = items.get("item");
+                JSONArray itemArray;
+                if (itemObj instanceof JSONArray) {
+                    itemArray = (JSONArray) itemObj;
                 } else {
-                    item.put("min1", 0);
-                    item.put("arrivalStatus", "도착 정보가 제공되지 않습니다");
+                    // 단일 항목인 경우 배열로 변환
+                    itemArray = new JSONArray();
+                    itemArray.put(itemObj);
+                }
 
-                    // item의 모든 데이터를 Map으로 변환
+                // 각 항목 처리
+                for (int i = 0; i < itemArray.length(); i++) {
+                    JSONObject item = itemArray.getJSONObject(i);
+
+                    // 필요한 데이터 추출
+                    String busNo = item.optString("lineno", "");
+                    
+                    // 모든 데이터를 Map으로 변환
                     Map<String, Object> allData = new HashMap<>();
                     java.util.Iterator<String> keys = item.keys();
                     while (keys.hasNext()) {
                         String key = keys.next();
                         allData.put(key, item.get(key));
                     }
-
-                    arrivals.add(new BusArrivalDto(busNo, 0, allData));
+                    
+                    // 운행 상태 확인
+                    boolean isOperating = item.has("min1") && !item.optString("min1", "0").equals("0") && 
+                                         !item.optString("min1", "").equals("운행대기") && 
+                                         !item.optString("min1", "").equals("도착정보없음");
+                    allData.put("arrivalStatus", isOperating);
+                    
+                    // 회차 여부 확인 (bstopidx 값을 기준으로 판단)
+                    int bstopidx = item.optInt("bstopidx", 0);
+                    boolean isReverse = (bstopidx > 50); // 예시: bstopidx가 50보다 크면 회차로 간주
+                    allData.put("isReverse", isReverse);
+                    
+                    // 도착 시간 설정
+                    long arrivalTime = isOperating ? 1L : 0L;
+                    
+                    // BusArrivalDto 생성 및 추가
+                    BusArrivalDto dto = new BusArrivalDto(busNo, arrivalTime, allData);
+                    arrivals.add(dto);
                 }
             }
         } catch (Exception e) {
