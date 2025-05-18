@@ -1,10 +1,11 @@
 package com.deu.java.backend.Bus.service;
 
-import com.deu.java.backend.Bus.client.BusanBimsApiClient;
 import com.deu.java.backend.Bus.config.JpaUtil;
 import com.deu.java.backend.Bus.dto.BusArrivalDto;
 import com.deu.java.backend.Bus.entity.BusArrival;
 import com.deu.java.backend.Bus.repository.BusArrivalRepository;
+import com.deu.java.backend.apiClient.BusanBimsApiClient;
+
 import jakarta.persistence.EntityManager;
 
 import java.util.ArrayList;

@@ -16,7 +16,7 @@ import com.deu.java.backend.Bus.service.BusServiceFactory;
 import com.deu.java.backend.Festival.controller.FestivalController;
 import com.deu.java.backend.Festival.service.FestivalService;
 import com.deu.java.backend.Festival.service.FestivalServiceImpl;
-import com.deu.java.backend.Bus.client.BusanBimsApiClient;
+import com.deu.java.backend.apiClient.BusanBimsApiClient;
 
 public class Backend {
 
@@ -83,7 +83,7 @@ public class Backend {
         // BIMS 정거장별 정보: DB -> Service
         BusArrivalController arrivalController = new BusArrivalController(arrivalService);
         // -------------------------------------------------------------------------------------------
-        
+
         // 축제 정보: csv -> service
         FestivalService festService = new FestivalServiceImpl();
         FestivalController festController = new FestivalController(festService);
