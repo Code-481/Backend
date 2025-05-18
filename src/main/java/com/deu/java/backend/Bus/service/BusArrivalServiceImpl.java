@@ -15,16 +15,15 @@ public class BusArrivalServiceImpl implements BusArrivalService {
     }
 
     @Override
-    public List<BusArrivalDto> getBusArrivalsByStopId(String stopId) {
+    public List<BusArrivalDto> getBusArrivalsByStopId(String routeId) {
         
         List<BusArrivalDto> busArrivals = new ArrayList<>();
         
         try {
-            List<BusArrivalDto> arrivalDto = bimsApiClient.fetchArrivalInfo(stopId);
+            List<BusArrivalDto> arrivalDto = bimsApiClient.fetchArrivalInfo(routeId);
             busArrivals.addAll(arrivalDto);
-            
+
         } catch (RuntimeException e) {
-           
             System.err.println("버스 도착 정보 호출 실패: " + e.getMessage()); 
             busArrivals.clear();  // 실패 시 빈 리스트를 반환
         }

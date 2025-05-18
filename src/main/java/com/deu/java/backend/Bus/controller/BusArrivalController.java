@@ -15,14 +15,14 @@ public class BusArrivalController {
 
     public void handleGetArrivalInfo(Context ctx) {
         ctx.contentType("application/json; charset=UTF-8");
-        String stopId = ctx.queryParam("stopId");
+        String routeId = ctx.queryParam("routeId");
         
-        if (stopId == null || stopId.isBlank()) {
-            ctx.status(400).json(new Error("Missing stopId"));
+        if (routeId == null || routeId.isBlank()) {
+            ctx.status(400).json(new Error("Missing RouteId"));
             return;
         }
         
-        List<BusArrivalDto> busArrivals = busArrivalService.getBusArrivalsByStopId(stopId);
+        List<BusArrivalDto> busArrivals = busArrivalService.getBusArrivalsByStopId(routeId);
 
         ctx.json(busArrivals);
     }

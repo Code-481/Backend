@@ -62,9 +62,11 @@ public class Backend {
         BusServiceFactory busServiceFactory = em -> new BusServiceImpl(new BusRepositoryImpl(em));
         BusController busController = new BusController(busServiceFactory);
 
-        // BIMS 정거장별 정보: API -> service
+        // BIMS 정거장별 정보: API -> DB Cache
         BusanBimsApiClient bimsApiClient = new BusanBimsApiClient();
         BusArrivalService arrivalService = new BusArrivalServiceImpl(bimsApiClient);
+
+        // BIMS 정거장별 정보: DB Cache -> Service
         BusArrivalController arrivalController = new BusArrivalController(arrivalService);
 
         // 축제 정보: csv -> service

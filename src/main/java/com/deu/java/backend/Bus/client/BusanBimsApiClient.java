@@ -5,12 +5,13 @@ import io.github.cdimascio.dotenv.Dotenv;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.w3c.dom.*;
-import javax.xml.parsers.*;
-import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import org.xml.sax.InputSource;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.json.XML;
+import java.util.Map;
 
 public class BusanBimsApiClient {
 
@@ -21,14 +22,14 @@ public class BusanBimsApiClient {
             .load();
 
     // API KEY
-    private final String API_KEY = dotenv.get("API_KEY");
-    private final String BASE_URL = dotenv.get("BASE_URL");
+    private final String API_KEY = dotenv.get("BUSID_BUSID_API_KEY");
     private final OkHttpClient client = new OkHttpClient();
 
     // 도착 정보
-    public List<BusArrivalDto> fetchArrivalInfo(String stopId) {
+    public List<BusArrivalDto> fetchArrivalInfo(String bstopid) {
 
-        String url = BASE_URL + "/stopArrByBstopid?serviceKey=" + API_KEY + "&bstopid=" + stopId;
+        String url = "http://apis.data.go.kr/6260000/BusanBIMS/stopArrByBstopid?serviceKey=" + API_KEY + "&bstopid="
+                + bstopid;
         Request request = new Request.Builder()
                 .url(url)
                 .build();
@@ -36,7 +37,7 @@ public class BusanBimsApiClient {
         try (Response response = client.newCall(request).execute()) {
             if (response.isSuccessful()) {
                 String xmlResponse = response.body().string();
-                return parseArrivalInfoFromXml(xmlResponse, stopId);
+                return parseArrivalInfoFromXml(xmlResponse, bstopid);
             } else {
                 throw new RuntimeException("Failed to fetch arrival info: " + response.message());
             }
@@ -45,40 +46,69 @@ public class BusanBimsApiClient {
         }
     }
 
-    // XML 파싱하여 도착 정보를 추출
-    private List<BusArrivalDto> parseArrivalInfoFromXml(String xmlResponse, String stopId) throws Exception {
+    // XML 파싱하여 정보 추출
+    private List<BusArrivalDto> parseArrivalInfoFromXml(String xmlResponse, String bstopid) throws Exception {
         List<BusArrivalDto> arrivals = new ArrayList<>();
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        InputSource is = new InputSource(new StringReader(xmlResponse));
-        Document doc = builder.parse(is);
-        NodeList itemList = doc.getElementsByTagName("item");
 
-        for (int i = 0; i < itemList.getLength(); i++) {
-            Node itemNode = itemList.item(i);
-            if (itemNode.getNodeType() == Node.ELEMENT_NODE) {
-                Element item = (Element) itemNode;
-                String busNo = getTagValue("carno1", item);
-                String arrivalTimeStr = getTagValue("min1", item);
-                long arrivalTime = Long.parseLong(arrivalTimeStr);
-                arrivals.add(new BusArrivalDto(busNo, arrivalTime));
+        try {
+            // XML을 JSON으로 변환
+            JSONObject jsonResponse = XML.toJSONObject(xmlResponse);
+
+            // JSON 구조 탐색
+            JSONObject response = jsonResponse.getJSONObject("response");
+            JSONObject body = response.getJSONObject("body");
+            JSONObject items = body.getJSONObject("items");
+
+            // items가 배열인지 단일 객체인지 확인
+            Object itemObj = items.get("item");
+            JSONArray itemArray;
+            if (itemObj instanceof JSONArray) {
+                itemArray = (JSONArray) itemObj;
+            } else {
+                // 단일 항목인 경우 배열로 변환
+                itemArray = new JSONArray();
+                itemArray.put(itemObj);
             }
+
+            // 각 항목 처리
+            for (int i = 0; i < itemArray.length(); i++) {
+                JSONObject item = itemArray.getJSONObject(i);
+
+                // 필요한 데이터 추출
+                String busNo = item.optString("lineno", "");
+
+                // min1 키가 있는지 확인
+                if (item.has("min1")) {
+                    item.put("arrivalStatus", "운행중");
+                    Map<String, Object> allData = new HashMap<>();
+                    java.util.Iterator<String> keys = item.keys();
+                    while (keys.hasNext()) {
+                        String key = keys.next();
+                        allData.put(key, item.get(key));
+                    }
+                } else {
+                    item.put("min1", 0);
+                    item.put("arrivalStatus", "도착 정보가 제공되지 않습니다");
+
+                    // item의 모든 데이터를 Map으로 변환
+                    Map<String, Object> allData = new HashMap<>();
+                    java.util.Iterator<String> keys = item.keys();
+                    while (keys.hasNext()) {
+                        String key = keys.next();
+                        allData.put(key, item.get(key));
+                    }
+
+                    arrivals.add(new BusArrivalDto(busNo, 0, allData));
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error parsing XML to JSON: " + e.getMessage(), e);
         }
 
         if (arrivals.isEmpty()) {
-            throw new RuntimeException("No bus arrival data found for stopId: " + stopId);
+            throw new RuntimeException("No bus arrival data found for stopId: " + bstopid);
         }
 
         return arrivals;
-    }
-
-    // 특정 태그의 값을 반환하는 메소드
-    private String getTagValue(String tag, Element element) {
-        NodeList nl = element.getElementsByTagName(tag);
-        if (nl.getLength() > 0) {
-            Node n = nl.item(0);
-            return n.getTextContent();
-        }
-        return "";
     }
 }
