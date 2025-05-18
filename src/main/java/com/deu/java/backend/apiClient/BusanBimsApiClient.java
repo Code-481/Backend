@@ -1,4 +1,4 @@
-package com.deu.java.backend.bus.client;
+package com.deu.java.backend.apiClient;
 
 import com.deu.java.backend.Bus.dto.BusArrivalDto;
 import io.github.cdimascio.dotenv.Dotenv;
@@ -60,11 +60,19 @@ public class BusanBimsApiClient {
                 Element item = (Element) itemNode;
                 String busNo = getTagValue("carno1", item);
                 String arrivalTimeStr = getTagValue("min1", item);
-                long arrivalTime = Long.parseLong(arrivalTimeStr);
-                arrivals.add(new BusArrivalDto(busNo, arrivalTime));
+
+                if (arrivalTimeStr == null || arrivalTimeStr.trim().isEmpty()) {
+                    continue;
+                }
+                try {
+                    long arrivalTime = Long.parseLong(arrivalTimeStr.trim());
+                    arrivals.add(new BusArrivalDto(busNo, arrivalTime));
+                } catch (NumberFormatException e) {
+                    System.err.println("도착 시간 파싱 실패 (min1): " + arrivalTimeStr + " → 예외: " + e.getMessage());
+                    arrivals.add(new BusArrivalDto(busNo, -1)); // 예: -1로 대체
+                }
             }
         }
-
         if (arrivals.isEmpty()) {
             throw new RuntimeException("No bus arrival data found for stopId: " + stopId);
         }

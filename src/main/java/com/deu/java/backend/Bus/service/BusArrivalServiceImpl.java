@@ -1,6 +1,6 @@
 package com.deu.java.backend.Bus.service;
 
-import com.deu.java.backend.bus.client.BusanBimsApiClient;
+import com.deu.java.backend.apiClient.BusanBimsApiClient;
 import com.deu.java.backend.Bus.dto.BusArrivalDto;
 
 import java.util.ArrayList;

@@ -17,7 +17,7 @@ import com.deu.java.backend.Bus.service.BusServiceFactory;
 import com.deu.java.backend.Festival.controller.FestivalController;
 import com.deu.java.backend.Festival.service.FestivalService;
 import com.deu.java.backend.Festival.service.FestivalServiceImpl;
-import com.deu.java.backend.bus.client.BusanBimsApiClient;
+import com.deu.java.backend.apiClient.BusanBimsApiClient;
 
 public class Backend {
 
