@@ -1,6 +1,6 @@
 package com.deu.java.backend.Bus.service;
 
-import com.deu.java.backend.Bus.config.JpaUtil;
+import com.deu.java.backend.config.JpaUtil;
 import com.deu.java.backend.Bus.dto.BusArrivalDto;
 import com.deu.java.backend.Bus.entity.BusArrival;
 import com.deu.java.backend.Bus.repository.BusArrivalRepository;

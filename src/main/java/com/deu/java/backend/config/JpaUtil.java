@@ -1,4 +1,4 @@
-package com.deu.java.backend.Bus.config;
+package com.deu.java.backend.config;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import jakarta.persistence.EntityManagerFactory;

@@ -1,10 +1,12 @@
 package com.deu.java.backend;
 
 //import com.deu.java.backend.Weather.WeatherController;
+import com.deu.java.backend.dormmeal.controller.DormMealController;
+import com.deu.java.backend.dormmeal.service.DormMealService;
 import io.javalin.Javalin;
 import jakarta.persistence.EntityManager;
 
-import com.deu.java.backend.Bus.config.JpaUtil;
+import com.deu.java.backend.config.JpaUtil;
 import com.deu.java.backend.Bus.controller.BusController;
 import com.deu.java.backend.Bus.controller.BusArrivalController;
 import com.deu.java.backend.Bus.service.BusArrivalService;
@@ -64,7 +66,13 @@ public class Backend {
         // BIMS 정거장별 정보: API -> DB
         BusanBimsApiClient bimsApiClient = new BusanBimsApiClient();
         BusArrivalService arrivalService = new BusArrivalServiceImpl(bimsApiClient);
-
+        try {
+            DormMealService service = new DormMealService();
+            DormMealController controller = new DormMealController(service);
+            System.out.println("Javalin 서버 및 자정 스케줄러가 시작되었습니다.");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         // -----------------------------------------------------------------------------------------
         // ########################
         // # 스케줄려 구간 #
