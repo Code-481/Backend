@@ -26,9 +26,6 @@ public class JpaUtil {
             String jdbcUser = dotenv.get("JDBC_USER");
             String jdbcPassword = dotenv.get("JDBC_PASSWORD");
 
-            System.out.println("JDBC URL: " + jdbcUrl);
-            System.out.println("JDBC USER: " + jdbcUser);
-
             if (jdbcUrl == null || jdbcUser == null || jdbcPassword == null) {
                 throw new RuntimeException("필수 데이터베이스 환경 변수가 설정되지 않았습니다.");
             }
@@ -58,6 +55,20 @@ public class JpaUtil {
 
     public static EntityManagerFactory getEntityManagerFactory() {
         return emf;
+    }
+
+    public static boolean testConnection() {
+        try {
+            EntityManagerFactory emf = getEntityManagerFactory();
+            var em = emf.createEntityManager();
+            em.createNativeQuery("SELECT 1").getSingleResult();
+            em.close();
+            System.out.println("DB 연결 성공!");
+            return true;
+        } catch (Exception e) {
+            System.err.println("DB 연결 실패: " + e.getMessage());
+            return false;
+        }
     }
 
     public static void close() {

@@ -2,6 +2,7 @@ package com.deu.java.backend.Bus.scheduler;
 
 import com.deu.java.backend.Bus.dto.BusArrivalDto;
 import com.deu.java.backend.Bus.service.BusArrivalService;
+import com.deu.java.backend.Bus.service.BusArrivalServiceImpl;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -52,11 +53,26 @@ public class BusArrivalScheduler {
         for (String stopId : stopIds) {
             try {
                 List<BusArrivalDto> arrivals = busArrivalService.getBusArrivalsByStopId(stopId);
+
+                // 여기서 arrivals 리스트의 각 버스 정보를 로그로 출력
+                System.out.println("정류소 ID " + stopId + "에서 받아온 버스 도착 정보:");
+                for (BusArrivalDto dto : arrivals) {
+                    System.out.printf(
+                            "  - 버스번호: %s, 도착시간: %d, 전체데이터: %s%n",
+                            dto.getBusNo(),
+                            dto.getArrivalTime(),
+                            dto.getAllData()
+                    );
+                }
+                // (DB 저장은 주석 처리)
+                busArrivalService.saveArrivals(stopId, arrivals);
+
                 System.out.println("정류소 ID " + stopId + "의 버스 " + arrivals.size() + "개 정보 업데이트 완료");
             } catch (Exception e) {
                 System.err.println("정류소 ID " + stopId + " 정보 업데이트 실패: " + e.getMessage());
             }
         }
+
 
         System.out.println("정류소 정보 업데이트 완료: " + LocalDateTime.now(ZoneId.of("Asia/Seoul")));
     }

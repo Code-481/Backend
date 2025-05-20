@@ -1,4 +1,4 @@
-package com.deu.java.backend.Bus.entity;
+package com.deu.java.backend.entity;
 
 import jakarta.persistence.*;
 

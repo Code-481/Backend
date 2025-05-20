@@ -1,16 +1,13 @@
-package com.deu.java.backend.Bus.entity;
+package com.deu.java.backend.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "busArraival")
 public class BusArrival {
     
     @Id
-    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id; // bstopid (정류소ID)
     
     @Column(name = "arrivalTime", nullable = false)

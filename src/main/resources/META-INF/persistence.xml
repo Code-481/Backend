@@ -6,8 +6,8 @@
              version="3.0">
     <persistence-unit name="bus-unit" transaction-type="RESOURCE_LOCAL">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
-        <class>com.deu.java.backend.Bus.entity.BusEntity</class>
-        <class>com.deu.java.backend.Bus.entity.RouteEntity</class>
+        <class>com.deu.java.backend.entity.BusEntity</class>
+        <class>com.deu.java.backend.entity.RouteEntity</class>
         <properties>
             <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect" />
             <property name="hibernate.hbm2ddl.auto" value="update" />

@@ -1,7 +1,7 @@
 package com.deu.java.backend.Bus.service;
 
 import com.deu.java.backend.Bus.dto.BusDTO;
-import com.deu.java.backend.Bus.entity.BusEntity;
+import com.deu.java.backend.entity.BusEntity;
 import com.deu.java.backend.Bus.repository.BusRepository;
 import java.util.List;
 import java.util.stream.Collectors;

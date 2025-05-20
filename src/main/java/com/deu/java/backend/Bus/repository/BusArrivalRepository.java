@@ -1,6 +1,6 @@
 package com.deu.java.backend.Bus.repository;
 
-import com.deu.java.backend.Bus.entity.BusArrival;
+import com.deu.java.backend.entity.BusArrival;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.TypedQuery;
