@@ -1,22 +1,35 @@
 package com.deu.java.backend.dormmeal.controller;
 
-import com.deu.java.backend.dormmeal.dto.MealDataDto;
+
 import com.deu.java.backend.dormmeal.service.DormMealService;
+import com.deu.java.backend.dormmeal.service.DormMealresponce;
 import io.javalin.http.Context;
 
-public class DormMealController {
-    private final DormMealService service;
 
-    public DormMealController(DormMealService service) {
-        this.service = service;
+public class DormMealController {
+    public final DormMealService dormMealService;
+
+    public DormMealController(DormMealService dormMealService) {
+        this.dormMealService = dormMealService;
     }
 
-    public void getAllMealData(Context ctx) {
+    // DB에서 조회 (기존)
+    public void handleGetDormMealInfo(Context ctx) {
+        ctx.contentType("application/json; charset=UTF-8");
+        String paramdata = ctx.queryParam("place");
         try {
-            MealDataDto data = service.getAllMealData();
-            ctx.json(data);
+            //파라미터가 없으면
+            if (paramdata !=  null || !paramdata.equals("")) {
+                DormMealresponce  dormMealresponce = new DormMealresponce(paramdata);
+                ctx.json(dormMealresponce.get_dormmealresponce(paramdata));
+            }else{
+                DormMealresponce  dormMealresponce = new DormMealresponce("");
+                ctx.json(dormMealresponce.get_dormmealresponceall());
+            }
         } catch (Exception e) {
-            ctx.status(500).result("서버 오류: " + e.getMessage());
+            System.err.println(e);
         }
     }
+
+
 }

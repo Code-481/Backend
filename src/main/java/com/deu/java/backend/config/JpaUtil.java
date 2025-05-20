@@ -56,21 +56,7 @@ public class JpaUtil {
     public static EntityManagerFactory getEntityManagerFactory() {
         return emf;
     }
-
-    public static boolean testConnection() {
-        try {
-            EntityManagerFactory emf = getEntityManagerFactory();
-            var em = emf.createEntityManager();
-            em.createNativeQuery("SELECT 1").getSingleResult();
-            em.close();
-            System.out.println("DB 연결 성공!");
-            return true;
-        } catch (Exception e) {
-            System.err.println("DB 연결 실패: " + e.getMessage());
-            return false;
-        }
-    }
-
+    
     public static void close() {
         if (emf != null && emf.isOpen()) {
             emf.close();

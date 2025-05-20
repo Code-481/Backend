@@ -48,7 +48,5 @@ public class BusArrivalDto {
     public String getBusNo() { return busNo; }
     public long getArrivalTime() { return arrivalTime; }
     public Map getAllData() { return allData; }
-    public boolean isOperating() { return isOperating; }
-    public boolean isReverse() { return isReverse; }
-    // ... (getter 편의 메서드는 기존 그대로)
+
 }

@@ -1,6 +1,7 @@
 package com.deu.java.backend;
 
 import com.deu.java.backend.dormmeal.controller.DormMealController;
+import com.deu.java.backend.dormmeal.scheduler.MealDataScheduler;
 import com.deu.java.backend.dormmeal.service.DormMealService;
 import io.javalin.Javalin;
 import jakarta.persistence.EntityManager;
@@ -35,15 +36,13 @@ public class Backend {
         });
 
         // 버스 노선 정보
-        app.get("/bus/route/{routeId}", busController::handleGetBusInfo);
+        app.get("/api/v1/bus/route/{routeId}", busController::handleGetBusInfo);
         // 정류장별 도착 정보 (DB에서 조회)
-        app.get("/bus/stop/arrival", arrivalController::handleGetArrivalInfo);
-        // 실시간 API 호출 후 DB 저장 (업데이트)
-        app.get("/api/bus/update", arrivalController::handleUpdateAndGetArrivalInfo);
+        app.get("/api/v1/bus/stop/arrival", arrivalController::handleGetArrivalInfo);
         // 축제 정보
-        app.get("/festival/info", festivalController::handleGetFestivalInfo);
-        // 기숙사 식단 정보
-        app.get("/dormmeal", dormMealController::getAllMealData);
+        app.get("/api/v1/festival/info", festivalController::handleGetFestivalInfo);
+        //학식 정보 파라미터 place
+        app.get("/api/v1/univ/foods", dormMealController::handleGetDormMealInfo);
 
         // 실행 후
         app.after(ctx -> {
@@ -52,19 +51,13 @@ public class Backend {
                 em.close();
             }
         });
-
-        // 예외
-        app.exception(Exception.class, (e, ctx) -> {
-            ctx.status(500).result("알 수 없는 오류가 발생했습니다.");
-        });
-
         return app;
     }
 
     public static void main(String[] args) {
 
 
-        // 서비스/컨트롤러 생성
+        // 버스 실시간 서비스
         BusanBimsApiClient apiClient = new BusanBimsApiClient();
         BusArrivalServiceImpl busArrivalService = new BusArrivalServiceImpl(apiClient);
         BusArrivalController busArrivalController = new BusArrivalController(busArrivalService);
@@ -72,20 +65,30 @@ public class Backend {
         BusServiceFactory busServiceFactory = em -> new BusServiceImpl(new BusRepositoryImpl(em));
         BusController busController = new BusController(busServiceFactory);
 
+        // 행사 실시간 부분
         FestivalService festService = new FestivalServiceImpl();
         FestivalController festController = new FestivalController(festService);
 
+        // 우리가 좋아하는 학식 기숙사 파싱하는 부분
         DormMealService dormMealService = new DormMealService();
         DormMealController dormMealController = new DormMealController(dormMealService);
 
         // Javalin 서버 시작
         Javalin app = createApp(busArrivalController, busController, festController, dormMealController);
         app.start(7000);
-        System.out.println("Javalin 서버 시작: http://localhost:7000/");
+
+        // 예최 처리
+        app.exception(Exception.class, (e, ctx) -> {
+            e.printStackTrace(); // 콘솔에 예외 로그
+            ctx.status(500).json(new Error("알 수 없는 오류가 발생했습니다."));
+        });
+
 
         // 스케줄러 시작
         BusArrivalScheduler busArrivalScheduler = new BusArrivalScheduler(busArrivalService);
         busArrivalScheduler.startScheduling();
+        MealDataScheduler mealDataScheduler = new MealDataScheduler(dormMealService);
+        //mealDataScheduler.startMidnightScheduler();
 
         // 종료 시 리소스 정리
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {

@@ -18,14 +18,14 @@ public class BusArrivalScheduler {
     private final BusArrivalService busArrivalService;
     private final ScheduledExecutorService scheduler;
 
-    // 정류소 ID 목록 (10개)
+    // 정류소 ID 목록 (10개) 만약을 위해서 동의대역도 추가 함
     private final List<String> stopIds = Arrays.asList(
             "163980104", "172520304", "172440302", "511700000", "163980103",
             "172520303", "163980102", "172520302", "163980101", "172520301");
 
     // 운행 시간 설정 (한국 시간 기준)
-    private final LocalTime startTime = LocalTime.of(5, 0); // 오전 5시
-    private final LocalTime endTime = LocalTime.of(23, 0); // 오후 11시
+    private final LocalTime startTime = LocalTime.of(5, 30); // 오전 5시 30분 부터 다시 실행
+    private final LocalTime endTime = LocalTime.of(23, 10); // 오후 11시 10 분까지 다시 중단
 
     public BusArrivalScheduler(BusArrivalService busArrivalService) {
         this.busArrivalService = busArrivalService;
@@ -58,18 +58,19 @@ public class BusArrivalScheduler {
                 System.out.println("정류소 ID " + stopId + "에서 받아온 버스 도착 정보:");
                 for (BusArrivalDto dto : arrivals) {
                     System.out.printf(
-                            "  - 버스번호: %s, 도착시간: %d, 전체데이터: %s%n",
+                            "  - 버스번호: %s, 도착시간: %d,",
                             dto.getBusNo(),
-                            dto.getArrivalTime(),
-                            dto.getAllData()
+                            dto.getArrivalTime()
                     );
                 }
-                // (DB 저장은 주석 처리)
+
+                // DB 저장하는 함수로 값을 전달하여 저장하게 함.
+                // 이 부분때문에 많이 고엿성
                 busArrivalService.saveArrivals(stopId, arrivals);
 
-                System.out.println("정류소 ID " + stopId + "의 버스 " + arrivals.size() + "개 정보 업데이트 완료");
+                System.out.println("정류소 ID " + stopId + "의 버스 " + arrivals.size() + "개 정보 업데이트/생성 완료");
             } catch (Exception e) {
-                System.err.println("정류소 ID " + stopId + " 정보 업데이트 실패: " + e.getMessage());
+                System.err.println("정류소 ID " + stopId + " 정보 업데이트/생성 실패: " + e.getMessage());
             }
         }
 
