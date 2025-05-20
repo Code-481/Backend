@@ -12,4 +12,6 @@ public interface BusArrivalService {
 
     // 여러 버스 도착정보를 DB에 저장
     void saveArrivals(String bstopid, List<BusArrivalDto> arrivals);
+
+    List<BusArrivalDto> getAllBusArrivalsFromDb();
 }

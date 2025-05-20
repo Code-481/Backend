@@ -170,6 +170,27 @@ public class BusArrivalServiceImpl implements BusArrivalService {
         return result;
     }
 
+    public List<BusArrivalDto> getAllBusArrivalsFromDb() {
+        EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
+        List<BusArrivalDto> result = new ArrayList<>();
+        try {
+            Query q = em.createNativeQuery("SELECT bstopid, bus_no, arrival_time, all_data FROM busArraival");
+            List<?> rows = q.getResultList();
+            for (Object rowObj : rows) {
+                Object[] row = (Object[]) rowObj;
+                String stopId = (String) row[0];
+                String busNo = (String) row[1];
+                long arrivalTime = ((Number) row[2]).longValue();
+                String allDataStr = (String) row[3];
+                Map<String, Object> allData = new org.json.JSONObject(allDataStr).toMap();
+                result.add(new BusArrivalDto(busNo, arrivalTime, allData));
+            }
+        } finally {
+            em.close();
+        }
+        return result;
+    }
+
 
     // 실제 API 호출 구현
     @Override
