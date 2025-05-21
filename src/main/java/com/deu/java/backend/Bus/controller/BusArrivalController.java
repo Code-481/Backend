@@ -36,10 +36,4 @@ public class BusArrivalController {
             ctx.status(500).result("서버 오류: " + e.getMessage());
         }
     }
-
-    // 에려 발생시 반환
-    private static class Error {
-        private final String message;
-        public Error(String message) { this.message = message; }
-    }
 }

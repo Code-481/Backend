@@ -69,6 +69,7 @@ public class BusArrivalScheduler {
                 busArrivalService.saveArrivals(stopId, arrivals);
 
                 System.out.println("정류소 ID " + stopId + "의 버스 " + arrivals.size() + "개 정보 업데이트/생성 완료");
+                Thread.sleep(5000);
             } catch (Exception e) {
                 System.err.println("정류소 ID " + stopId + " 정보 업데이트/생성 실패: " + e.getMessage());
             }
