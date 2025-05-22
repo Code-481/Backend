@@ -1,5 +1,13 @@
 package com.deu.java.backend;
 
+import com.deu.java.backend.Weather.WeatherController;
+import com.deu.java.backend.Weather.repository.WeatherTodayRepository;
+import com.deu.java.backend.Weather.repository.WeatherTodayRepositoryImpl;
+import com.deu.java.backend.Weather.repository.WeatherWeekRepository;
+import com.deu.java.backend.Weather.repository.WeatherWeekRepositoryImpl;
+import com.deu.java.backend.Weather.service.WeatherService;
+import com.deu.java.backend.Weather.service.WeatherServiceImpl;
+import com.deu.java.backend.apiClient.WeatherApiClient;
 import com.deu.java.backend.dormmeal.controller.DormMealController;
 import com.deu.java.backend.dormmeal.scheduler.MealDataScheduler;
 import com.deu.java.backend.dormmeal.service.DormMealService;
@@ -18,6 +26,7 @@ import com.deu.java.backend.Festival.controller.FestivalController;
 import com.deu.java.backend.Festival.service.FestivalService;
 import com.deu.java.backend.Festival.service.FestivalServiceImpl;
 import com.deu.java.backend.apiClient.BusanBimsApiClient;
+import jakarta.persistence.EntityManagerFactory;
 
 public class Backend {
 
@@ -25,7 +34,8 @@ public class Backend {
             BusArrivalController arrivalController,
             BusController busController,
             FestivalController festivalController,
-            DormMealController dormMealController
+            DormMealController dormMealController,
+            WeatherController weatherController
     ) {
         Javalin app = Javalin.create();
 
@@ -43,6 +53,10 @@ public class Backend {
         app.get("/api/v1/festival/info", festivalController::handleGetFestivalInfo);
         //학식 정보 파라미터 place
         app.get("/api/v1/univ/foods", dormMealController::handleGetDormMealInfo);
+        // 오늘 날씨 정보
+        app.get("/api/v1/weather/today", weatherController::handleTodayWeather);
+        // 주간 날씨 정보
+        app.get("/api/v1/weather/week", weatherController::handleWeekWeather);
 
         // 실행 후
         app.after(ctx -> {
@@ -55,6 +69,7 @@ public class Backend {
     }
 
     public static void main(String[] args) {
+        EntityManagerFactory emf = JpaUtil.getEntityManagerFactory();
 
 
         // 버스 실시간 서비스
@@ -73,8 +88,16 @@ public class Backend {
         DormMealService dormMealService = new DormMealService();
         DormMealController dormMealController = new DormMealController(dormMealService);
 
+        // 날씨 정보: API -> DB -> service
+        WeatherTodayRepository todayRepo = new WeatherTodayRepositoryImpl(emf.createEntityManager());
+        WeatherWeekRepository weekRepo = new WeatherWeekRepositoryImpl(emf.createEntityManager());
+        WeatherApiClient Weather_apiClient = new WeatherApiClient() {}; // 너가 만든 API client
+        WeatherService weatherService = new WeatherServiceImpl(todayRepo, weekRepo, Weather_apiClient);
+        WeatherController weatherController = new WeatherController(weatherService);
+
+
         // Javalin 서버 시작
-        Javalin app = createApp(busArrivalController, busController, festController, dormMealController);
+        Javalin app = createApp(busArrivalController, busController, festController, dormMealController, weatherController);
         app.start(7000);
 
         // 예최 처리

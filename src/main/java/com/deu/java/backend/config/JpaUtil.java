@@ -9,7 +9,7 @@ import java.util.Map;
 
 public class JpaUtil {
 
-    private static final EntityManagerFactory emf = buildEntityManagerFactory();
+    public static final EntityManagerFactory emf = buildEntityManagerFactory();
 
     private static EntityManagerFactory buildEntityManagerFactory() {
         try {
