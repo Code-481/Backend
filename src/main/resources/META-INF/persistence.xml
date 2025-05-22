@@ -4,15 +4,25 @@
              xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence
              https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd"
              version="3.0">
-    <persistence-unit name="bus-unit" transaction-type="RESOURCE_LOCAL">
-        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+    <persistence-unit name="418-unit" transaction-type="RESOURCE_LOCAL">
         <class>com.deu.java.backend.Bus.entity.BusEntity</class>
         <class>com.deu.java.backend.Bus.entity.RouteEntity</class>
+        <class>com.deu.java.backend.Weather.entity.WeatherTodayEntity</class>
+        <class>com.deu.java.backend.Weather.entity.WeatherWeekEntity</class>
+        <!-- 접속 정보는 JpaUtil에서 덮어쓰기 -->
         <properties>
-            <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect" />
-            <property name="hibernate.hbm2ddl.auto" value="update" />
-            <property name="hibernate.show_sql" value="false" />
-            <property name="hibernate.format_sql" value="false" />
+            <property name="jakarta.persistence.jdbc.driver" value="com.mysql.cj.jdbc.Driver"/>
+            <property name="jakarta.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/yourdb"/>
+            <property name="jakarta.persistence.jdbc.user" value="yourUser"/>
+            <property name="jakarta.persistence.jdbc.password" value="yourPassword"/>
+
+            <property name="hibernate.dialect" value="org.hibernate.dialect.MySQL8Dialect"/>
+            <property name="hibernate.hbm2ddl.auto" value="update"/>
+            <property name="hibernate.show_sql" value="false"/>
+            <property name="hibernate.format_sql" value="false"/>
+
+            <property name="hibernate.transaction.factory_class" value="org.hibernate.transaction.JDBCTransactionFactory"/>
+            <property name="hibernate.transaction.jta.platform" value="org.hibernate.engine.transaction.jta.platform.internal.JBossTransactionManagerLookup"/>
         </properties>
     </persistence-unit>
 </persistence>
