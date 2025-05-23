@@ -1,8 +1,7 @@
 package com.deu.java.backend.Weather.service;
 
-
-import com.deu.java.backend.Weather.dto.WeatherTodayDTO;
-import com.deu.java.backend.Weather.dto.WeatherWeekDTO;
+import com.deu.java.backend.Weather.DTO.WeatherTodayDTO;
+import com.deu.java.backend.Weather.DTO.WeatherWeekDTO;
 import com.deu.java.backend.apiClient.WeatherApiClient;
 import com.deu.java.backend.Weather.repository.WeatherTodayRepository;
 import com.deu.java.backend.Weather.repository.WeatherWeekRepository;
@@ -10,12 +9,10 @@ import com.deu.java.backend.entity.WeatherTodayEntity;
 import com.deu.java.backend.entity.WeatherWeekEntity;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 public class WeatherServiceImpl implements WeatherService {
 
@@ -82,20 +79,6 @@ public class WeatherServiceImpl implements WeatherService {
     }
 
     @Override
-    public List<WeatherTodayDTO> getTodayWeatherMorningAfternoon() {
-        try {
-            List<WeatherTodayEntity> entities = apiClient.fetchTodayWeatherMorningAfternoon();
-            return entities.stream()
-                    .map(e -> new WeatherTodayDTO(e.getDate(), e.getTemperature(), e.getSky(), e.getCloud()))
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            System.err.println("오늘 오전/오후 날씨 조회 실패: " + e.getMessage());
-            return Collections.emptyList();
-        }
-    }
-
-
-    @Override
     public WeatherTodayDTO getTodayWeather() {
         LocalDate today = LocalDate.now();
 
@@ -119,29 +102,22 @@ public class WeatherServiceImpl implements WeatherService {
 
     }
 
-
     @Override
     public List<WeatherWeekDTO> getWeekWeather() {
         LocalDate today = LocalDate.now();
         LocalDate endDate = today.plusDays(6);
 
         List<WeatherWeekEntity> cached = weekRepo.findWeekWeather(today, endDate);
-
-        if (!cached.isEmpty() && cached.size() >= 7) {
+        System.out.println("cached.size(): " + cached.size());
+        if (!cached.isEmpty()) {
             return convertToWeekDTO(cached);
         }
 
-        try {
-            List<WeatherWeekDTO> apiDTOs = apiClient.fetchWeekWeather();
-            List<WeatherWeekEntity> entities = convertDtoToEntity(apiDTOs);
-
-            weekRepo.clearWeekWeather(today, endDate);
-            weekRepo.saveAll(entities);
-
-            return apiDTOs;
-        } catch (Exception e) {
-            System.err.println("주간 날씨 조회 실패: " + e.getMessage());
-            return cached.isEmpty() ? Collections.emptyList() : convertToWeekDTO(cached);
-        }
+        List<WeatherWeekDTO> apiDTOs = apiClient.fetchWeekWeather();
+        List<WeatherWeekEntity> entities = convertDtoToEntity(apiDTOs);
+        System.out.println("converted DTOs: " + apiDTOs.size());
+        weekRepo.clearWeekWeather(today, endDate);
+        weekRepo.saveAll(entities);
+        return apiDTOs;
     }
 }

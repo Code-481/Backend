@@ -104,6 +104,13 @@
             <artifactId>opencsv</artifactId>
             <version>5.9</version>
         </dependency>
+
+        <dependency>
+            <groupId>javax.persistence</groupId>
+            <artifactId>javax.persistence-api</artifactId>
+            <version>2.2</version>
+        </dependency>
+
     </dependencies>
 
     <!-- 아래 있는거는 건들지 마세요. INMD -->

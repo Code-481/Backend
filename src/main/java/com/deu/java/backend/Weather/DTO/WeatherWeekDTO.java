@@ -1,8 +1,9 @@
-package com.deu.java.backend.Weather.dto;
+package com.deu.java.backend.Weather.DTO;
 
 import java.time.LocalDate;
 
 public class WeatherWeekDTO {
+
     private final String date;
     private final int minTemperature;
     private final int maxTemperature;

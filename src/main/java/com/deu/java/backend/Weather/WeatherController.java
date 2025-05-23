@@ -1,7 +1,8 @@
 package com.deu.java.backend.Weather;
 
-import com.deu.java.backend.Weather.dto.WeatherTodayDTO;
-import com.deu.java.backend.Weather.dto.WeatherWeekDTO;
+
+import com.deu.java.backend.Weather.DTO.WeatherTodayDTO;
+import com.deu.java.backend.Weather.DTO.WeatherWeekDTO;
 import com.deu.java.backend.Weather.service.WeatherService;
 import io.javalin.http.Context;
 import java.util.List;

@@ -1,4 +1,5 @@
-package com.deu.java.backend.Weather.dto;
+package com.deu.java.backend.Weather.DTO;
+
 
 import java.time.LocalDateTime;
 
