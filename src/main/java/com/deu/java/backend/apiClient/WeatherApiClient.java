@@ -68,14 +68,25 @@ public class WeatherApiClient {
         return text.substring(startIdx + "#START7777".length(), endIdx).trim();
     }
 
-    private int parseIntSafe(String value, int defaultValue) {
-        try {
-            return Integer.parseInt(value);
-        } catch (NumberFormatException e) {
-            return defaultValue;
-        }
-    }
 
+
+    public int parseTaWithFallback(Element item, Integer previousTa) {
+        String taRaw = getElementTextByTagName(item, "ta");
+
+        if (taRaw == null || taRaw.isBlank()) {
+            if (previousTa == null) {
+                throw new RuntimeException("ta 값이 비어 있고 대체할 이전 값도 없습니다.");
+            }
+            System.out.println("[대체값 적용] announceTime=" + getElementTextByTagName(item, "announceTime") + " 의 ta 값이 없어 이전 값 " + previousTa + " 사용함.");
+            return previousTa;
+        }
+
+        try {
+            return Integer.parseInt(taRaw);
+        } catch (NumberFormatException e) {
+            throw new RuntimeException("ta 값 파싱 실패. raw: " + taRaw);
+        }
+}
     public WeatherTodayEntity fetchTodayWeather() {
         try {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
@@ -95,43 +106,39 @@ public class WeatherApiClient {
                 Node recordNode = recordList.item(i);
                 if (recordNode.getNodeType() != Node.ELEMENT_NODE) continue;
 
-
                 Element recordElement = (Element) recordNode;
 
-                Map<String, String> parsed = Map.of("announceTime", getElementTextByTagName(recordElement, "announceTime"), "wfCd", getElementTextByTagName(recordElement, "wfCd"), "ta", getElementTextByTagName(recordElement, "ta"), "rnYn", getElementTextByTagName(recordElement, "rnYn"), "numEf", getElementTextByTagName(recordElement, "numEf"));
-                int numEf = parseIntSafe(parsed.get("numEf"), -1);
-                if (numEf != 0) continue;
-                String taRaw = parsed.get("ta");
-                int ta;
-                if (taRaw == null || taRaw.isBlank()) {
-                    if (previousTa == null) {
-                        throw new RuntimeException("ta 값이 비어 있고 대체할 이전 값도 없습니다. announceTime: " + parsed.get("announceTime"));
-                    }
+                Map<String, String> parsed = Map.of(
+                        "announceTime", getElementTextByTagName(recordElement, "announceTime"),
+                        "wfCd", getElementTextByTagName(recordElement, "wfCd"),
+                        "ta", getElementTextByTagName(recordElement, "ta"),
+                        "rnYn", getElementTextByTagName(recordElement, "rnYn"),
+                        "numEf", getElementTextByTagName(recordElement, "numEf")
+                );
 
-                    // 서버에만 로그
-                    System.out.println("[대체값 적용] announceTime=" + parsed.get("announceTime") + " 의 ta 값이 없어 이전 값 " + previousTa + " 사용함.");
+                //numEf 예외처리
+                int numEf = (parsed.get("numEf") != null && !parsed.get("numEf").isBlank())
+                        ? Integer.parseInt(parsed.get("numEf"))
+                        : -1;
+                //최신 현 기상 정보만 취급
+                if (numEf != 0) throw new RuntimeException("numEf=0인 오늘 날씨 데이터가 없습니다.");
 
-                    ta = previousTa;
-                } else {
-                    ta = parseIntSafe(taRaw, -999);
-                    if (ta == -999) {
-                        throw new RuntimeException("ta 값 파싱 실패. announceTime: " + parsed.get("announceTime") + ", raw: " + taRaw);
-                    }
+                //ta 예외처리
+                int ta = parseTaWithFallback(recordElement, previousTa);
+                previousTa = ta; //이전 값 저장
 
-                    // 정상적으로 ta를 파싱했으면 이전값으로 저장
-                    previousTa = ta;
-                }
-                WeatherTodayEntity candidate = new WeatherTodayEntity(parsed.get("announceTime"), ta, parsed.get("wfCd"), parsed.get("rnYn"));
+                //데이터 생성
+                WeatherTodayEntity candidate = new WeatherTodayEntity(
+                        parsed.get("announceTime"), ta, parsed.get("wfCd"), parsed.get("rnYn")
+                );
 
-                if (latestWeather == null || LocalDateTime.parse(candidate.getDate(), formatter).isAfter(LocalDateTime.parse(latestWeather.getDate(), formatter))) {
+                // 이전데이터와 비교하여 날짜가 이후이면 업데이트
+                if (latestWeather == null
+                        || LocalDateTime.parse(candidate.getDate(), formatter)
+                                        .isAfter(LocalDateTime.parse(latestWeather.getDate(), formatter))) {
                     latestWeather = candidate;
                 }
             }
-
-            if (latestWeather == null) {
-                throw new RuntimeException("numEf=0인 오늘 날씨 데이터가 없습니다.");
-            }
-
             return latestWeather;
 
         } catch (Exception e) {
