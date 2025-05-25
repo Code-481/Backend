@@ -25,13 +25,10 @@ import java.util.stream.Collectors;
 
 public class WeatherApiClient {
 
-    static Dotenv dotenv = Dotenv.configure()
-            .ignoreIfMalformed()
-            .ignoreIfMissing()
-            .load();
+    static Dotenv dotenv = Dotenv.configure().ignoreIfMalformed().ignoreIfMissing().load();
     private static final String todayWeatherKey = dotenv.get("TODAY_WEATHER_API_KEY");
-    private static final String weekWeatherKey = dotenv.get("WEEK_WEATHER_API_KEY");
     private static final String TODAY_WEATHER_URL = "https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstMsgService/getLandFcst?pageNo=1&numOfRows=10&dataType=XML&regId=11B10101&authKey=" + todayWeatherKey;
+    private static final String weekWeatherKey = dotenv.get("WEEK_WEATHER_API_KEY");
     private static final String WEEKLY_WEATHER_C_URL = "https://apihub.kma.go.kr/api/typ01/url/fct_afs_wc.php?reg=11H20201&tmfc=0&disp=1&help=0&authKey=" + weekWeatherKey;
     private static final String WEEKLY_WEATHER_L_URL = "https://apihub.kma.go.kr/api/typ01/url/fct_afs_wl.php?reg=11H20000&tmfc=0&disp=1&help=0&authKey=" + weekWeatherKey;
 
@@ -51,6 +48,7 @@ public class WeatherApiClient {
             conn.disconnect();
         }
     }
+
     private String getElementTextByTagName(Element element, String tagName) {
         NodeList nodeList = element.getElementsByTagName(tagName);
         if (nodeList != null && nodeList.getLength() > 0) {
@@ -58,6 +56,7 @@ public class WeatherApiClient {
         }
         return "";
     }
+
     private String extractDataBetweenMarkers(String text) {
         int startIdx = text.indexOf("#START7777");
         int endIdx = text.indexOf("#7777END");
@@ -68,6 +67,7 @@ public class WeatherApiClient {
         // startMarker 끝 다음부터 endMarker 시작 직전까지
         return text.substring(startIdx + "#START7777".length(), endIdx).trim();
     }
+
     private int parseIntSafe(String value, int defaultValue) {
         try {
             return Integer.parseInt(value);
@@ -81,6 +81,9 @@ public class WeatherApiClient {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
             WeatherTodayEntity latestWeather = null;
 
+            // 이전 ta 값을 저장할 변수
+            Integer previousTa = null;
+
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document document = builder.parse(TODAY_WEATHER_URL);
@@ -92,37 +95,37 @@ public class WeatherApiClient {
                 Node recordNode = recordList.item(i);
                 if (recordNode.getNodeType() != Node.ELEMENT_NODE) continue;
 
+
                 Element recordElement = (Element) recordNode;
 
-                Map<String, String> parsed = Map.of(
-                        "announceTime", getElementTextByTagName(recordElement, "announceTime"),
-                        "wfCd", getElementTextByTagName(recordElement, "wfCd"),
-                        "ta", getElementTextByTagName(recordElement, "ta"),
-                        "rnYn", getElementTextByTagName(recordElement, "rnYn"),
-                        "numEf", getElementTextByTagName(recordElement, "numEf")
-                );
-
+                Map<String, String> parsed = Map.of("announceTime", getElementTextByTagName(recordElement, "announceTime"), "wfCd", getElementTextByTagName(recordElement, "wfCd"), "ta", getElementTextByTagName(recordElement, "ta"), "rnYn", getElementTextByTagName(recordElement, "rnYn"), "numEf", getElementTextByTagName(recordElement, "numEf"));
                 int numEf = parseIntSafe(parsed.get("numEf"), -1);
-
-                if (numEf == 0) {
-                    int ta = parseIntSafe(parsed.get("ta"), -999);
-
-                    WeatherTodayEntity candidate = new WeatherTodayEntity(
-                            parsed.get("announceTime"),
-                            ta,
-                            parsed.get("wfCd"),
-                            parsed.get("rnYn")
-                    );
-
-                    if (latestWeather == null ||
-                            LocalDateTime.parse(candidate.getDate(), formatter)
-                                    .isAfter(LocalDateTime.parse(latestWeather.getDate(), formatter))) {
-                        latestWeather = candidate;
+                if (numEf != 0) continue;
+                String taRaw = parsed.get("ta");
+                int ta;
+                if (taRaw == null || taRaw.isBlank()) {
+                    if (previousTa == null) {
+                        throw new RuntimeException("ta 값이 비어 있고 대체할 이전 값도 없습니다. announceTime: " + parsed.get("announceTime"));
                     }
+
+                    // 서버에만 로그
+                    System.out.println("[대체값 적용] announceTime=" + parsed.get("announceTime") + " 의 ta 값이 없어 이전 값 " + previousTa + " 사용함.");
+
+                    ta = previousTa;
+                } else {
+                    ta = parseIntSafe(taRaw, -999);
+                    if (ta == -999) {
+                        throw new RuntimeException("ta 값 파싱 실패. announceTime: " + parsed.get("announceTime") + ", raw: " + taRaw);
+                    }
+
+                    // 정상적으로 ta를 파싱했으면 이전값으로 저장
+                    previousTa = ta;
                 }
+                WeatherTodayEntity candidate = new WeatherTodayEntity(parsed.get("announceTime"), ta, parsed.get("wfCd"), parsed.get("rnYn"));
 
-
-
+                if (latestWeather == null || LocalDateTime.parse(candidate.getDate(), formatter).isAfter(LocalDateTime.parse(latestWeather.getDate(), formatter))) {
+                    latestWeather = candidate;
+                }
             }
 
             if (latestWeather == null) {
@@ -166,7 +169,7 @@ public class WeatherApiClient {
                     map.put("min", min);
                     map.put("max", max);
 
-                } catch (NumberFormatException ignored) {}
+                } catch (NumberFormatException ignored) { }
 
                 dayIndex++;
             }
@@ -196,19 +199,16 @@ public class WeatherApiClient {
             }
 
             // 3. DTO 생성
-            return weatherMap.entrySet().stream()
-                    .map(e -> {
-                        LocalDate date = e.getKey();
-                        Map<String, Object> v = e.getValue();
-                        int min = (int) v.getOrDefault("min", -999);
-                        int max = (int) v.getOrDefault("max", -999);
-                        String sky = (String) v.getOrDefault("sky", "");
-                        String rain = (String) v.getOrDefault("rain", "");
+            return weatherMap.entrySet().stream().map(e -> {
+                LocalDate date = e.getKey();
+                Map<String, Object> v = e.getValue();
+                int min = (int) v.getOrDefault("min", -999);
+                int max = (int) v.getOrDefault("max", -999);
+                String sky = (String) v.getOrDefault("sky", "");
+                String rain = (String) v.getOrDefault("rain", "");
 
-                        return new WeatherWeekDTO(date, min, max, sky, rain);
-                    })
-                    .sorted(Comparator.comparing(WeatherWeekDTO::getDate))
-                    .collect(Collectors.toList());
+                return new WeatherWeekDTO(date, min, max, sky, rain);
+            }).sorted(Comparator.comparing(WeatherWeekDTO::getDate)).collect(Collectors.toList());
 
         } catch (Exception e) {
             throw new RuntimeException("주간 날씨 불러오기 실패", e);
