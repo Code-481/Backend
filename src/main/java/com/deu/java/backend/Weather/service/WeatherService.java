@@ -7,6 +7,7 @@ import java.util.List;
 
 
 public interface WeatherService {
+
     WeatherTodayDTO getTodayWeather();
     List<WeatherWeekDTO> getWeekWeather();
 }

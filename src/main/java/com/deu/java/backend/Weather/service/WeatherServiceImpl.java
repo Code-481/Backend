@@ -7,6 +7,7 @@ import com.deu.java.backend.Weather.repository.WeatherTodayRepository;
 import com.deu.java.backend.Weather.repository.WeatherWeekRepository;
 import com.deu.java.backend.entity.WeatherTodayEntity;
 import com.deu.java.backend.entity.WeatherWeekEntity;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,44 +20,50 @@ public class WeatherServiceImpl implements WeatherService {
     private final WeatherTodayRepository todayRepo;
     private final WeatherWeekRepository weekRepo;
     private final WeatherApiClient apiClient;
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
 
     public WeatherServiceImpl(WeatherTodayRepository todayRepo, WeatherWeekRepository weekRepo, WeatherApiClient apiClient) {
         this.todayRepo = todayRepo;
         this.weekRepo = weekRepo;
         this.apiClient = apiClient;
-        startScheduledUpdate();  // 생성자에서 스케줄러 시작
-
+        startTodayWeatherUpdate();
+        startWeekWeatherUpdate();
     }
 
-    private void startScheduledUpdate() {
+    // 1시간마다 오늘 날씨 갱신
+    private void startTodayWeatherUpdate() {
         Runnable updateTask = () -> {
             try {
-                System.out.println("3시간마다 날씨 정보 갱신 실행: " + LocalDateTime.now());
-
-                LocalDate today = LocalDate.now();
-                LocalDate endDate = today.plusDays(6);
-
-                // 기존 DB 데이터 삭제
-                weekRepo.clearWeekWeather(today, endDate);
-
-                // API에서 DTO 리스트 가져오기
-                List<WeatherWeekDTO> apiDTOs = apiClient.fetchWeekWeather();
-
-                // DTO -> Entity 변환
-                List<WeatherWeekEntity> apiData = convertDtoToEntity(apiDTOs);
-
-                // DB 저장
-                weekRepo.saveAll(apiData);
-
-                System.out.println("날씨 정보 갱신 완료: " + LocalDateTime.now());
+                System.out.println("1시간마다 오늘 날씨 정보 갱신 실행: " + LocalDateTime.now());
+                WeatherTodayEntity apiData = apiClient.fetchTodayWeather();
+                todayRepo.clearTodayWeather();
+                todayRepo.save(apiData);
+                System.out.println("오늘 날씨 정보 갱신 완료: " + LocalDateTime.now());
             } catch (Exception e) {
-                System.err.println("날씨 정보 갱신 실패: " + e.getMessage());
+                System.err.println("오늘 날씨 정보 갱신 실패: " + e.getMessage());
                 e.printStackTrace();
             }
         };
+        scheduler.scheduleAtFixedRate(updateTask, 0, 1, TimeUnit.HOURS);
+    }
 
-        // 0초 후 즉시 시작, 이후 3시간마다 실행
+    // 3시간마다 주간 날씨 갱신
+    private void startWeekWeatherUpdate() {
+        Runnable updateTask = () -> {
+            try {
+                System.out.println("3시간마다 주간 날씨 정보 갱신 실행: " + LocalDateTime.now());
+                LocalDate today = LocalDate.now();
+                LocalDate endDate = today.plusDays(6);
+                weekRepo.clearWeekWeather(today, endDate);
+                List<WeatherWeekDTO> apiDTOs = apiClient.fetchWeekWeather();
+                List<WeatherWeekEntity> apiData = convertDtoToEntity(apiDTOs);
+                weekRepo.saveAll(apiData);
+                System.out.println("주간 날씨 정보 갱신 완료: " + LocalDateTime.now());
+            } catch (Exception e) {
+                System.err.println("주간 날씨 정보 갱신 실패: " + e.getMessage());
+                e.printStackTrace();
+            }
+        };
         scheduler.scheduleAtFixedRate(updateTask, 0, 3, TimeUnit.HOURS);
     }
 
@@ -81,41 +88,26 @@ public class WeatherServiceImpl implements WeatherService {
     @Override
     public WeatherTodayDTO getTodayWeather() {
         LocalDate today = LocalDate.now();
-
-        // DB에 데이터 있으면 반환
-        WeatherTodayEntity cached= todayRepo.findLatestAnnounceTimeToday(today);
-        if (cached!=null) {
+        WeatherTodayEntity cached = todayRepo.findLatestAnnounceTimeToday(today);
+        if (cached != null) {
             return new WeatherTodayDTO(cached.getDate(), cached.getTemperature(), cached.getSky(), cached.getCloud());
         }
-
-        // 없으면 외부 API 를 호출
         WeatherTodayEntity apiData = apiClient.fetchTodayWeather();
-        WeatherTodayEntity entity = new WeatherTodayEntity(
-                apiData.getDate(), apiData.getTemperature(), apiData.getSky(), apiData.getCloud()
-        );
-
-        //기존 데이터 삭제 및 새 데이터 저장
         todayRepo.clearTodayWeather();
-        todayRepo.save(entity);
-
-        return new WeatherTodayDTO(entity.getDate(), entity.getTemperature(), entity.getSky(), entity.getCloud());
-
+        todayRepo.save(apiData);
+        return new WeatherTodayDTO(apiData.getDate(), apiData.getTemperature(), apiData.getSky(), apiData.getCloud());
     }
 
     @Override
     public List<WeatherWeekDTO> getWeekWeather() {
         LocalDate today = LocalDate.now();
         LocalDate endDate = today.plusDays(6);
-
         List<WeatherWeekEntity> cached = weekRepo.findWeekWeather(today, endDate);
-        System.out.println("cached.size(): " + cached.size());
         if (!cached.isEmpty()) {
             return convertToWeekDTO(cached);
         }
-
         List<WeatherWeekDTO> apiDTOs = apiClient.fetchWeekWeather();
         List<WeatherWeekEntity> entities = convertDtoToEntity(apiDTOs);
-        System.out.println("converted DTOs: " + apiDTOs.size());
         weekRepo.clearWeekWeather(today, endDate);
         weekRepo.saveAll(entities);
         return apiDTOs;

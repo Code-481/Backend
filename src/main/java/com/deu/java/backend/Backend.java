@@ -115,18 +115,11 @@ public class Backend {
 
         // 종료 시 리소스 정리
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            System.out.println("서버 종료: 스케줄러 및 JPA 리소스 정리 중...");
+            System.out.println("서버 종료: 스케줄러 및 Javalin 리소스 정리 중...");
             busArrivalScheduler.stopScheduling();
             JpaUtil.close();
             System.out.println("리소스 정리 완료. 서버 종료.");
+            System.exit(0);
         }));
-
-        // main이 종료되지 않도록 대기
-        try {
-            Thread.currentThread().join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
     }
-
 }

@@ -1,15 +1,14 @@
 package com.deu.java.backend.apiClient;
 
 import com.deu.java.backend.Weather.DTO.WeatherWeekDTO;
+import com.deu.java.backend.apiClient.compoment.KmaBaseTimeUtil;
 import com.deu.java.backend.entity.WeatherTodayEntity;
 import io.github.cdimascio.dotenv.Dotenv;
-import org.w3c.dom.Document;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -27,7 +26,7 @@ public class WeatherApiClient {
 
     static Dotenv dotenv = Dotenv.configure().ignoreIfMalformed().ignoreIfMissing().load();
     private static final String todayWeatherKey = dotenv.get("TODAY_WEATHER_API_KEY");
-    private static final String TODAY_WEATHER_URL = "https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstMsgService/getLandFcst?pageNo=1&numOfRows=10&dataType=XML&regId=11B10101&authKey=" + todayWeatherKey;
+    private static final String TODAY_WEATHER_URL = "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtFcst";
     private static final String weekWeatherKey = dotenv.get("WEEK_WEATHER_API_KEY");
     private static final String WEEKLY_WEATHER_C_URL = "https://apihub.kma.go.kr/api/typ01/url/fct_afs_wc.php?reg=11H20201&tmfc=0&disp=1&help=0&authKey=" + weekWeatherKey;
     private static final String WEEKLY_WEATHER_L_URL = "https://apihub.kma.go.kr/api/typ01/url/fct_afs_wl.php?reg=11H20000&tmfc=0&disp=1&help=0&authKey=" + weekWeatherKey;
@@ -87,59 +86,92 @@ public class WeatherApiClient {
             throw new RuntimeException("ta 값 파싱 실패. raw: " + taRaw);
         }
 }
+
+    private String getNearestFcstTime() {
+        LocalDateTime now = LocalDateTime.now().plusMinutes(30); // 30분 이내 예보 반영
+        int hour = now.getHour();
+        int minute = now.getMinute();
+        String fcstTime = String.format("%02d00", hour);
+        if (minute >= 30) {
+            fcstTime = String.format("%02d30", hour);
+        }
+        return fcstTime;
+    }
+
+    private String getTodayStr() {
+        return java.time.LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+    }
+
     public WeatherTodayEntity fetchTodayWeather() {
         try {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
-            WeatherTodayEntity latestWeather = null;
+            String[] baseDateTime = KmaBaseTimeUtil.getLatestBaseDateTime(LocalDateTime.now());
+            String baseDate = baseDateTime[0];
+            String baseTime = baseDateTime[1];
+            String nx = "97";
+            String ny = "75";
+            StringBuilder urlBuilder = new StringBuilder(TODAY_WEATHER_URL);
+            urlBuilder.append("?ServiceKey=").append(todayWeatherKey);
+            urlBuilder.append("&base_date=").append(baseDate);
+            urlBuilder.append("&base_time=").append(baseTime);
+            urlBuilder.append("&nx=").append(nx);
+            urlBuilder.append("&ny=").append(ny);
+            urlBuilder.append("&numOfRows=100");
+            urlBuilder.append("&dataType=JSON");
 
-            // 이전 ta 값을 저장할 변수
-            Integer previousTa = null;
+            URL url = new URL(urlBuilder.toString());
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
 
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document document = builder.parse(TODAY_WEATHER_URL);
+            BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = rd.readLine()) != null) {
+                sb.append(line);
+            }
+            rd.close();
 
-            Element root = document.getDocumentElement();
-            NodeList recordList = root.getElementsByTagName("item");
+            String responseStr = sb.toString().trim();
+            System.out.println(sb.toString());
+            // JSON 응답이 아니면 로그 출력 및 예외 발생
+            if (!responseStr.startsWith("{")) {
+                System.err.println("API 응답이 JSON이 아님: " + responseStr);
+                throw new RuntimeException("기상청 API 응답이 JSON이 아님");
+            }
 
-            for (int i = 0; i < recordList.getLength(); i++) {
-                Node recordNode = recordList.item(i);
-                if (recordNode.getNodeType() != Node.ELEMENT_NODE) continue;
 
-                Element recordElement = (Element) recordNode;
+            JSONObject json = new JSONObject(sb.toString());
+            JSONArray items = json.getJSONObject("response")
+                    .getJSONObject("body")
+                    .getJSONObject("items")
+                    .getJSONArray("item");
 
-                Map<String, String> parsed = Map.of(
-                        "announceTime", getElementTextByTagName(recordElement, "announceTime"),
-                        "wfCd", getElementTextByTagName(recordElement, "wfCd"),
-                        "ta", getElementTextByTagName(recordElement, "ta"),
-                        "rnYn", getElementTextByTagName(recordElement, "rnYn"),
-                        "numEf", getElementTextByTagName(recordElement, "numEf")
-                );
+            String targetFcstDate = getTodayStr();
+            String targetFcstTime = getNearestFcstTime();
 
-                //numEf 예외처리
-                int numEf = (parsed.get("numEf") != null && !parsed.get("numEf").isBlank())
-                        ? Integer.parseInt(parsed.get("numEf"))
-                        : -1;
-                //최신 현 기상 정보만 취급
-                if (numEf != 0) throw new RuntimeException("numEf=0인 오늘 날씨 데이터가 없습니다.");
+            String sky = null, temperatureStr = null, cloud = null;
 
-                //ta 예외처리
-                int ta = parseTaWithFallback(recordElement, previousTa);
-                previousTa = ta; //이전 값 저장
+            for (int i = 0; i < items.length(); i++) {
+                JSONObject item = items.getJSONObject(i);
+                // 반드시 키 존재 여부 확인
+                if (!item.has("fcstDate") || !item.has("fcstTime") || !item.has("category")) continue;
+                String category = item.getString("category");
+                String fcstDate = item.getString("fcstDate");
+                String fcstTime = item.getString("fcstTime");
+                String fcstValue = item.getString("fcstValue");
+                if (fcstDate.equals(targetFcstDate) && fcstTime.equals(targetFcstTime)) {
 
-                //데이터 생성
-                WeatherTodayEntity candidate = new WeatherTodayEntity(
-                        parsed.get("announceTime"), ta, parsed.get("wfCd"), parsed.get("rnYn")
-                );
-
-                // 이전데이터와 비교하여 날짜가 이후이면 업데이트
-                if (latestWeather == null
-                        || LocalDateTime.parse(candidate.getDate(), formatter)
-                                        .isAfter(LocalDateTime.parse(latestWeather.getDate(), formatter))) {
-                    latestWeather = candidate;
+                    switch (category) {
+                        case "T1H": temperatureStr = fcstValue; break;
+                        case "SKY": sky = fcstValue; break;
+                        case "REH": cloud = fcstValue; break;
+                    }
                 }
             }
-            return latestWeather;
+            int temperature = (temperatureStr != null && !temperatureStr.isEmpty()) ? (int) Double.parseDouble(temperatureStr) : -999;
+            sky = (sky != null) ? sky : "";
+            cloud = (cloud != null) ? cloud : "";
+
+            return new WeatherTodayEntity(targetFcstDate, temperature, sky, cloud);
 
         } catch (Exception e) {
             throw new RuntimeException("오늘 날씨 데이터를 불러오는 데 실패했습니다.", e);
