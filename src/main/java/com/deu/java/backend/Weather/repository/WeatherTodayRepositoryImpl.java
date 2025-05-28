@@ -1,7 +1,7 @@
 package com.deu.java.backend.Weather.repository;
 
 
-import com.deu.java.backend.entity.WeatherTodayEntity;
+import com.deu.java.backend.Weather.entity.WeatherWeekEntity;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 
@@ -20,17 +20,17 @@ public class WeatherTodayRepositoryImpl implements WeatherTodayRepository {
 
 
     @Override
-    public WeatherTodayEntity findLatestAnnounceTimeToday(LocalDate today) {
+    public WeatherWeekEntity.WeatherTodayEntity findLatestAnnounceTimeToday(LocalDate today) {
         LocalDateTime start = today.atStartOfDay();           // 오늘 00시
         LocalDateTime end = start.plusDays(1);                // 내일 00시
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
         String startFormatted = start.format(formatter); // start가 LocalDateTime이라면
         String endFormatted = end.format(formatter); // start가 LocalDateTime이라면
 
-        List<WeatherTodayEntity> list = em.createQuery(
+        List<WeatherWeekEntity.WeatherTodayEntity> list = em.createQuery(
                         "SELECT w FROM WeatherTodayEntity w " +
                                 "WHERE w.date >= :start AND w.date < :end " +
-                                "ORDER BY w.date DESC", WeatherTodayEntity.class)
+                                "ORDER BY w.date DESC", WeatherWeekEntity.WeatherTodayEntity.class)
                 .setParameter("start", startFormatted)
                 .setParameter("end", endFormatted)
                 .setMaxResults(1)
@@ -50,7 +50,7 @@ public class WeatherTodayRepositoryImpl implements WeatherTodayRepository {
     }
 
     @Override
-    public void save(WeatherTodayEntity entity) {
+    public void save(WeatherWeekEntity.WeatherTodayEntity entity) {
         EntityTransaction tx = em.getTransaction();
         try {
             tx.begin();

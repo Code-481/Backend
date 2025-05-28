@@ -1,8 +1,8 @@
 package com.deu.java.backend.apiClient;
 
 import com.deu.java.backend.Weather.DTO.WeatherWeekDTO;
+import com.deu.java.backend.Weather.entity.WeatherWeekEntity;
 import com.deu.java.backend.apiClient.compoment.KmaBaseTimeUtil;
-import com.deu.java.backend.entity.WeatherTodayEntity;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -88,21 +88,25 @@ public class WeatherApiClient {
 }
 
     private String getNearestFcstTime() {
-        LocalDateTime now = LocalDateTime.now().plusMinutes(30); // 30분 이내 예보 반영
-        int hour = now.getHour();
-        int minute = now.getMinute();
-        String fcstTime = String.format("%02d00", hour);
+        LocalDateTime oneHourLater = LocalDateTime.now().plusHours(1);
+        int hour = oneHourLater.getHour();
+        int minute = oneHourLater.getMinute();
+
+        String fcstTime;
         if (minute >= 30) {
             fcstTime = String.format("%02d30", hour);
+        } else {
+            fcstTime = String.format("%02d00", hour);
         }
         return fcstTime;
     }
+
 
     private String getTodayStr() {
         return java.time.LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
     }
 
-    public WeatherTodayEntity fetchTodayWeather() {
+    public WeatherWeekEntity.WeatherTodayEntity fetchTodayWeather() {
         try {
             String[] baseDateTime = KmaBaseTimeUtil.getLatestBaseDateTime(LocalDateTime.now());
             String baseDate = baseDateTime[0];
@@ -131,6 +135,7 @@ public class WeatherApiClient {
             rd.close();
 
             String responseStr = sb.toString().trim();
+            System.out.println(urlBuilder.toString());
             System.out.println(sb.toString());
             // JSON 응답이 아니면 로그 출력 및 예외 발생
             if (!responseStr.startsWith("{")) {
@@ -147,7 +152,7 @@ public class WeatherApiClient {
 
             String targetFcstDate = getTodayStr();
             String targetFcstTime = getNearestFcstTime();
-
+            System.out.println(targetFcstTime);
             String sky = null, temperatureStr = null, cloud = null;
 
             for (int i = 0; i < items.length(); i++) {
@@ -171,7 +176,7 @@ public class WeatherApiClient {
             sky = (sky != null) ? sky : "";
             cloud = (cloud != null) ? cloud : "";
 
-            return new WeatherTodayEntity(targetFcstDate, temperature, sky, cloud);
+            return new WeatherWeekEntity.WeatherTodayEntity(targetFcstDate, temperature, sky, cloud);
 
         } catch (Exception e) {
             throw new RuntimeException("오늘 날씨 데이터를 불러오는 데 실패했습니다.", e);
