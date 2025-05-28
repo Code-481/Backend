@@ -1,7 +1,7 @@
 package com.deu.java.backend.Weather.repository;
 
 
-import com.deu.java.backend.entity.WeatherTodayEntity;
+import com.deu.java.backend.Weather.entity.WeatherTodayEntity;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 

@@ -1,8 +1,8 @@
 package com.deu.java.backend.apiClient;
 
 import com.deu.java.backend.Weather.DTO.WeatherWeekDTO;
+import com.deu.java.backend.Weather.entity.WeatherTodayEntity;
 import com.deu.java.backend.apiClient.compoment.KmaBaseTimeUtil;
-import com.deu.java.backend.entity.WeatherTodayEntity;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.json.JSONArray;
 import org.json.JSONObject;

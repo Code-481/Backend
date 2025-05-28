@@ -2,11 +2,11 @@ package com.deu.java.backend.Weather.service;
 
 import com.deu.java.backend.Weather.DTO.WeatherTodayDTO;
 import com.deu.java.backend.Weather.DTO.WeatherWeekDTO;
+import com.deu.java.backend.Weather.entity.WeatherTodayEntity;
+import com.deu.java.backend.Weather.entity.WeatherWeekEntity;
 import com.deu.java.backend.apiClient.WeatherApiClient;
 import com.deu.java.backend.Weather.repository.WeatherTodayRepository;
 import com.deu.java.backend.Weather.repository.WeatherWeekRepository;
-import com.deu.java.backend.entity.WeatherTodayEntity;
-import com.deu.java.backend.entity.WeatherWeekEntity;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

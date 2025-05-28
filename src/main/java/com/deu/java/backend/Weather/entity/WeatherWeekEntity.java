@@ -1,5 +1,6 @@
 package com.deu.java.backend.Weather.entity;
 
+
 import jakarta.persistence.*;
 import java.time.LocalDate;
 
