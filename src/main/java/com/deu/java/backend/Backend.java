@@ -15,13 +15,9 @@ import io.javalin.Javalin;
 import jakarta.persistence.EntityManager;
 
 import com.deu.java.backend.config.JpaUtil;
-import com.deu.java.backend.Bus.controller.BusController;
 import com.deu.java.backend.Bus.controller.BusArrivalController;
-import com.deu.java.backend.Bus.service.BusServiceImpl;
 import com.deu.java.backend.Bus.service.BusArrivalServiceImpl;
-import com.deu.java.backend.Bus.repository.BusRepositoryImpl;
 import com.deu.java.backend.Bus.scheduler.BusArrivalScheduler;
-import com.deu.java.backend.Bus.service.BusServiceFactory;
 import com.deu.java.backend.Festival.controller.FestivalController;
 import com.deu.java.backend.Festival.service.FestivalService;
 import com.deu.java.backend.Festival.service.FestivalServiceImpl;
@@ -32,7 +28,6 @@ public class Backend {
 
     public static Javalin createApp(
             BusArrivalController arrivalController,
-            BusController busController,
             FestivalController festivalController,
             DormMealController dormMealController,
             WeatherController weatherController
@@ -45,8 +40,6 @@ public class Backend {
             ctx.attribute("em", em);
         });
 
-        // 버스 노선 정보
-        app.get("/api/v1/bus/route/{routeId}", busController::handleGetBusInfo);
         // 정류장별 도착 정보 (DB에서 조회)
         app.get("/api/v1/bus/stop/arrival", arrivalController::handleGetArrivalInfo);
         // 축제 정보
@@ -77,8 +70,6 @@ public class Backend {
         BusArrivalServiceImpl busArrivalService = new BusArrivalServiceImpl(apiClient);
         BusArrivalController busArrivalController = new BusArrivalController(busArrivalService);
 
-        BusServiceFactory busServiceFactory = em -> new BusServiceImpl(new BusRepositoryImpl(em));
-        BusController busController = new BusController(busServiceFactory);
 
         // 행사 실시간 부분
         FestivalService festService = new FestivalServiceImpl();
@@ -97,7 +88,7 @@ public class Backend {
 
 
         // Javalin 서버 시작
-        Javalin app = createApp(busArrivalController, busController, festController, dormMealController, weatherController);
+        Javalin app = createApp(busArrivalController, festController, dormMealController, weatherController);
         app.start(7000);
 
         // 예최 처리
