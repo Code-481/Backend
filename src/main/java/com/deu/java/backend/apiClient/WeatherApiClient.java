@@ -1,15 +1,14 @@
 package com.deu.java.backend.apiClient;
 
 import com.deu.java.backend.Weather.DTO.WeatherWeekDTO;
-import com.deu.java.backend.Weather.entity.WeatherTodayEntity;
+import com.deu.java.backend.apiClient.compoment.KmaBaseTimeUtil;
+import com.deu.java.backend.entity.WeatherTodayEntity;
 import io.github.cdimascio.dotenv.Dotenv;
-import org.w3c.dom.Document;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -25,13 +24,10 @@ import java.util.stream.Collectors;
 
 public class WeatherApiClient {
 
-    static Dotenv dotenv = Dotenv.configure()
-            .ignoreIfMalformed()
-            .ignoreIfMissing()
-            .load();
+    static Dotenv dotenv = Dotenv.configure().ignoreIfMalformed().ignoreIfMissing().load();
     private static final String todayWeatherKey = dotenv.get("TODAY_WEATHER_API_KEY");
+    private static final String TODAY_WEATHER_URL = "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtFcst";
     private static final String weekWeatherKey = dotenv.get("WEEK_WEATHER_API_KEY");
-    private static final String TODAY_WEATHER_URL = "https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstMsgService/getLandFcst?pageNo=1&numOfRows=10&dataType=XML&regId=11B10101&authKey=" + todayWeatherKey;
     private static final String WEEKLY_WEATHER_C_URL = "https://apihub.kma.go.kr/api/typ01/url/fct_afs_wc.php?reg=11H20201&tmfc=0&disp=1&help=0&authKey=" + weekWeatherKey;
     private static final String WEEKLY_WEATHER_L_URL = "https://apihub.kma.go.kr/api/typ01/url/fct_afs_wl.php?reg=11H20000&tmfc=0&disp=1&help=0&authKey=" + weekWeatherKey;
 
@@ -51,6 +47,7 @@ public class WeatherApiClient {
             conn.disconnect();
         }
     }
+
     private String getElementTextByTagName(Element element, String tagName) {
         NodeList nodeList = element.getElementsByTagName(tagName);
         if (nodeList != null && nodeList.getLength() > 0) {
@@ -58,6 +55,7 @@ public class WeatherApiClient {
         }
         return "";
     }
+
     private String extractDataBetweenMarkers(String text) {
         int startIdx = text.indexOf("#START7777");
         int endIdx = text.indexOf("#7777END");
@@ -68,68 +66,112 @@ public class WeatherApiClient {
         // startMarker 끝 다음부터 endMarker 시작 직전까지
         return text.substring(startIdx + "#START7777".length(), endIdx).trim();
     }
-    private int parseIntSafe(String value, int defaultValue) {
-        try {
-            return Integer.parseInt(value);
-        } catch (NumberFormatException e) {
-            return defaultValue;
+
+
+
+    public int parseTaWithFallback(Element item, Integer previousTa) {
+        String taRaw = getElementTextByTagName(item, "ta");
+
+        if (taRaw == null || taRaw.isBlank()) {
+            if (previousTa == null) {
+                throw new RuntimeException("ta 값이 비어 있고 대체할 이전 값도 없습니다.");
+            }
+            System.out.println("[대체값 적용] announceTime=" + getElementTextByTagName(item, "announceTime") + " 의 ta 값이 없어 이전 값 " + previousTa + " 사용함.");
+            return previousTa;
         }
+
+        try {
+            return Integer.parseInt(taRaw);
+        } catch (NumberFormatException e) {
+            throw new RuntimeException("ta 값 파싱 실패. raw: " + taRaw);
+        }
+}
+
+    private String getNearestFcstTime() {
+        LocalDateTime now = LocalDateTime.now().plusMinutes(30); // 30분 이내 예보 반영
+        int hour = now.getHour();
+        int minute = now.getMinute();
+        String fcstTime = String.format("%02d00", hour);
+        if (minute >= 30) {
+            fcstTime = String.format("%02d30", hour);
+        }
+        return fcstTime;
+    }
+
+    private String getTodayStr() {
+        return java.time.LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
     }
 
     public WeatherTodayEntity fetchTodayWeather() {
         try {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
-            WeatherTodayEntity latestWeather = null;
+            String[] baseDateTime = KmaBaseTimeUtil.getLatestBaseDateTime(LocalDateTime.now());
+            String baseDate = baseDateTime[0];
+            String baseTime = baseDateTime[1];
+            String nx = "97";
+            String ny = "75";
+            StringBuilder urlBuilder = new StringBuilder(TODAY_WEATHER_URL);
+            urlBuilder.append("?ServiceKey=").append(todayWeatherKey);
+            urlBuilder.append("&base_date=").append(baseDate);
+            urlBuilder.append("&base_time=").append(baseTime);
+            urlBuilder.append("&nx=").append(nx);
+            urlBuilder.append("&ny=").append(ny);
+            urlBuilder.append("&numOfRows=100");
+            urlBuilder.append("&dataType=JSON");
 
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document document = builder.parse(TODAY_WEATHER_URL);
+            URL url = new URL(urlBuilder.toString());
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
 
-            Element root = document.getDocumentElement();
-            NodeList recordList = root.getElementsByTagName("item");
+            BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = rd.readLine()) != null) {
+                sb.append(line);
+            }
+            rd.close();
 
-            for (int i = 0; i < recordList.getLength(); i++) {
-                Node recordNode = recordList.item(i);
-                if (recordNode.getNodeType() != Node.ELEMENT_NODE) continue;
+            String responseStr = sb.toString().trim();
+            System.out.println(sb.toString());
+            // JSON 응답이 아니면 로그 출력 및 예외 발생
+            if (!responseStr.startsWith("{")) {
+                System.err.println("API 응답이 JSON이 아님: " + responseStr);
+                throw new RuntimeException("기상청 API 응답이 JSON이 아님");
+            }
 
-                Element recordElement = (Element) recordNode;
 
-                Map<String, String> parsed = Map.of(
-                        "announceTime", getElementTextByTagName(recordElement, "announceTime"),
-                        "wfCd", getElementTextByTagName(recordElement, "wfCd"),
-                        "ta", getElementTextByTagName(recordElement, "ta"),
-                        "rnYn", getElementTextByTagName(recordElement, "rnYn"),
-                        "numEf", getElementTextByTagName(recordElement, "numEf")
-                );
+            JSONObject json = new JSONObject(sb.toString());
+            JSONArray items = json.getJSONObject("response")
+                    .getJSONObject("body")
+                    .getJSONObject("items")
+                    .getJSONArray("item");
 
-                int numEf = parseIntSafe(parsed.get("numEf"), -1);
+            String targetFcstDate = getTodayStr();
+            String targetFcstTime = getNearestFcstTime();
 
-                if (numEf == 0) {
-                    int ta = parseIntSafe(parsed.get("ta"), -999);
+            String sky = null, temperatureStr = null, cloud = null;
 
-                    WeatherTodayEntity candidate = new WeatherTodayEntity(
-                            parsed.get("announceTime"),
-                            ta,
-                            parsed.get("wfCd"),
-                            parsed.get("rnYn")
-                    );
+            for (int i = 0; i < items.length(); i++) {
+                JSONObject item = items.getJSONObject(i);
+                // 반드시 키 존재 여부 확인
+                if (!item.has("fcstDate") || !item.has("fcstTime") || !item.has("category")) continue;
+                String category = item.getString("category");
+                String fcstDate = item.getString("fcstDate");
+                String fcstTime = item.getString("fcstTime");
+                String fcstValue = item.getString("fcstValue");
+                if (fcstDate.equals(targetFcstDate) && fcstTime.equals(targetFcstTime)) {
 
-                    if (latestWeather == null ||
-                            LocalDateTime.parse(candidate.getDate(), formatter)
-                                    .isAfter(LocalDateTime.parse(latestWeather.getDate(), formatter))) {
-                        latestWeather = candidate;
+                    switch (category) {
+                        case "T1H": temperatureStr = fcstValue; break;
+                        case "SKY": sky = fcstValue; break;
+                        case "REH": cloud = fcstValue; break;
                     }
                 }
-
-
-
             }
+            int temperature = (temperatureStr != null && !temperatureStr.isEmpty()) ? (int) Double.parseDouble(temperatureStr) : -999;
+            sky = (sky != null) ? sky : "";
+            cloud = (cloud != null) ? cloud : "";
 
-            if (latestWeather == null) {
-                throw new RuntimeException("numEf=0인 오늘 날씨 데이터가 없습니다.");
-            }
-
-            return latestWeather;
+            return new WeatherTodayEntity(targetFcstDate, temperature, sky, cloud);
 
         } catch (Exception e) {
             throw new RuntimeException("오늘 날씨 데이터를 불러오는 데 실패했습니다.", e);
@@ -166,7 +208,7 @@ public class WeatherApiClient {
                     map.put("min", min);
                     map.put("max", max);
 
-                } catch (NumberFormatException ignored) {}
+                } catch (NumberFormatException ignored) { }
 
                 dayIndex++;
             }
@@ -196,19 +238,16 @@ public class WeatherApiClient {
             }
 
             // 3. DTO 생성
-            return weatherMap.entrySet().stream()
-                    .map(e -> {
-                        LocalDate date = e.getKey();
-                        Map<String, Object> v = e.getValue();
-                        int min = (int) v.getOrDefault("min", -999);
-                        int max = (int) v.getOrDefault("max", -999);
-                        String sky = (String) v.getOrDefault("sky", "");
-                        String rain = (String) v.getOrDefault("rain", "");
+            return weatherMap.entrySet().stream().map(e -> {
+                LocalDate date = e.getKey();
+                Map<String, Object> v = e.getValue();
+                int min = (int) v.getOrDefault("min", -999);
+                int max = (int) v.getOrDefault("max", -999);
+                String sky = (String) v.getOrDefault("sky", "");
+                String rain = (String) v.getOrDefault("rain", "");
 
-                        return new WeatherWeekDTO(date, min, max, sky, rain);
-                    })
-                    .sorted(Comparator.comparing(WeatherWeekDTO::getDate))
-                    .collect(Collectors.toList());
+                return new WeatherWeekDTO(date, min, max, sky, rain);
+            }).sorted(Comparator.comparing(WeatherWeekDTO::getDate)).collect(Collectors.toList());
 
         } catch (Exception e) {
             throw new RuntimeException("주간 날씨 불러오기 실패", e);

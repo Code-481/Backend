@@ -1,5 +1,6 @@
 package com.deu.java.backend.Weather;
 
+
 import com.deu.java.backend.Weather.DTO.WeatherTodayDTO;
 import com.deu.java.backend.Weather.DTO.WeatherWeekDTO;
 import com.deu.java.backend.Weather.service.WeatherService;

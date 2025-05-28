@@ -1,6 +1,7 @@
 package com.deu.java.backend.Weather.repository;
 
-import com.deu.java.backend.Weather.entity.WeatherWeekEntity;
+
+import com.deu.java.backend.entity.WeatherWeekEntity;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 
@@ -17,18 +18,18 @@ public class WeatherWeekRepositoryImpl implements WeatherWeekRepository {
     @Override
     public List<WeatherWeekEntity> findWeekWeather(LocalDate startDate, LocalDate endDate) {
         return em.createQuery("SELECT w FROM WeatherWeekEntity w WHERE w.date BETWEEN :start AND :end", WeatherWeekEntity.class)
-                 .setParameter("start", startDate)
-                 .setParameter("end", endDate)
-                 .getResultList();
+                .setParameter("start", startDate)
+                .setParameter("end", endDate)
+                .getResultList();
     }
 
     @Override
     public void clearWeekWeather(LocalDate startDate, LocalDate endDate) {
         em.getTransaction().begin();
         em.createQuery("DELETE FROM WeatherWeekEntity w WHERE w.date BETWEEN :start AND :end")
-          .setParameter("start", startDate)
-          .setParameter("end", endDate)
-          .executeUpdate();
+                .setParameter("start", startDate)
+                .setParameter("end", endDate)
+                .executeUpdate();
         em.getTransaction().commit();
     }
 

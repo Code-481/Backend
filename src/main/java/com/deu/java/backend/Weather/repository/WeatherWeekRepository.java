@@ -1,6 +1,6 @@
 package com.deu.java.backend.Weather.repository;
 
-import com.deu.java.backend.Weather.entity.WeatherWeekEntity;
+import com.deu.java.backend.entity.WeatherWeekEntity;
 import java.time.LocalDate;
 import java.util.List;
 

@@ -1,5 +1,6 @@
 package com.deu.java.backend.Weather.DTO;
 
+
 import java.time.LocalDateTime;
 
 public class WeatherTodayDTO {

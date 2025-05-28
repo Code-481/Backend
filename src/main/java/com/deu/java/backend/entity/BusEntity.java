@@ -1,4 +1,4 @@
-package com.deu.java.backend.Bus.entity;
+package com.deu.java.backend.entity;
 
 import jakarta.persistence.*;
 
@@ -12,7 +12,7 @@ public class BusEntity {
 
     @ManyToOne // 노선의 식별자
     @JoinColumn(name = "route_id")
-    private RouteEntity route;
+    private com.deu.java.backend.entity.RouteEntity route;
     
     @Column(name = "plate_number") // 버스 번호판
     private String plateNumber;

@@ -1,53 +1,47 @@
 #Backend
+## ENV example
+```
+JDBC_URL =
+JDBC_USER = 
+JDBC_PASSWORD = 
+BUSID_BUSID_API_KEY = 
+```
+`BUSID_BUSID_API_KEY`키는 https://www.data.go.kr/data/15092750/openapi.do 에서 가져오면됨
 
-<details>
-<summary>📡 외부 API 확장 방법 (ApiClient 구조)</summary>
 
-### ✅ 구조적 개념
+## GET /api/v1/univ/foods?place={name}
+place -> "hyomin", "happy", "information", "suduck" <br/>
+중하나 입력하면 데이터 표시, 아무것도 입력안하면 4가지 모든게 다뜸
 
-> 새로운 API 경로를 사용하고 싶다면,  
-> `BusanBimsApiClient`에 대응되는 함수만 추가하면 됩니다.
+### [기숙사] Example API
+```
+{
+"date": "2025-05-19",
+"dormType": "happy",
+"food_menu": "낙지김치죽 / 동그랑떙&케찹 / 동원양반김 / 그린빈스굴소스볶음 / 추가밥&쥬시쿨주스 / 깍두기",
+"getMealType": "breakfast"
+},
+```
+getMealType으로 아침 점심 저녁으로 구분 하면됨됨
 
-- 기본 `BASE_URL`은 `.env`에서 관리
-- 각 함수는 API path, 파라미터, XML 파싱 로직만 다르게 작성
-- 서비스 계층에서 해당 함수만 호출하면 됨
-
----
-
-### 📁 예시: `/getBusLocation` 경로 추가 시
-
-#### 1. `.env` 확인  
-BASE_URL=https://apis.data.go.kr/busan/bims
-
-API_KEY=your_encoded_key
-
-#### 2. ApiClient에 함수 추가  (URL과 return값만 바꾸면 됨.)
-```java
-public BusLocationDto fetchBusLocation(String routeId) { \
-    String url = BASE_URL + "/getBusLocation?serviceKey=" + API_KEY + "&routeid=" + routeId;
-    
-    Request request = new Request.Builder().url(url).build();
-    try (Response response = client.newCall(request).execute()) {
-        if (response.isSuccessful()) {
-            String xmlResponse = response.body().string();
-            return parseBusLocationFromXml(xmlResponse);
-        } else {
-            throw new RuntimeException("API 호출 실패: " + response.message());
-        }
-    } catch (Exception e) {
-        throw new RuntimeException("API 호출 중 오류: " + e.getMessage(), e);
-    }
+### [학식] Example API
+```
+{
+"date": "2025-05-23",
+"dormType": "suduck",
+"food_menu": "여러가지",
+"getMealType": "lunch"
 }
 ```
+-> food_menu 푸드 메뉴쪽에 코너가 다뜨는 오류 있습 수정중
+
+### GET /api/v1/bus/stop/arrival?stopId={id}
+버스정류장 ID 입력 하면 데이터 반환 \n
+파라미터에 all이라는 값을 넣으면 정류장별로 정리 없이 바로 리스트로 뽑아줌
 
 
-#### 3. XML 파싱 함수 추가 (xml 파싱, 원하는 정보 추출(getTagValue사용), 기호에 맞게 예외 처리 후 정보 추출)
-```java
-private BusLocationDto parseBusLocationFromXml(String xml) throws Exception {
-    // DocumentBuilderFactory -> XML → DTO 로직 구현
-    // e.g., busNo, latitude, longitude 등 파싱
-}
-```
-
-#### 4. 서비스 계층에서 호출
-BusLocationDto location = apiClient.fetchBusLocation("12345");
+# 버스장류장 API 작동 원리
+1. 서버 실행시 스케줄려에 의해 자동으로 파싱
+2. 파싱하고 DB에 저장할때 중복되는 ID가 있으면 덮어쓰기나 없으면 새로 쓰기함
+3. 사용자는 DB에 저장되어 있는 값을 읽어서 파싱함
+4. 버스 데이터는 오전 5시 30분분 부터 오후 11시 10분까지 가져옴
