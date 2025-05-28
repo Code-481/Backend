@@ -1,5 +1,6 @@
 package com.deu.java.backend.Weather.entity;
 
+
 import jakarta.persistence.*;
 import java.time.LocalDate;
 
@@ -60,5 +61,4 @@ public class WeatherWeekEntity {
     public String getCloud() {
         return cloud;
     }
-
 }

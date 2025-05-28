@@ -1,12 +1,12 @@
 package com.deu.java.backend.Weather.repository;
 
 
-import com.deu.java.backend.Weather.entity.WeatherWeekEntity;
+import com.deu.java.backend.Weather.entity.WeatherTodayEntity;
 
 import java.time.LocalDate;
 
 public interface WeatherTodayRepository {
-    WeatherWeekEntity.WeatherTodayEntity findLatestAnnounceTimeToday(LocalDate today);
+    WeatherTodayEntity findLatestAnnounceTimeToday(LocalDate today);
     void clearTodayWeather();
-    void save(WeatherWeekEntity.WeatherTodayEntity entity);
+    void save(WeatherTodayEntity entity);
 }

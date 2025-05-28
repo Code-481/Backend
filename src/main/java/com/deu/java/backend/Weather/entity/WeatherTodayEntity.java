@@ -2,6 +2,7 @@ package com.deu.java.backend.Weather.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "weather_today")
@@ -52,5 +53,4 @@ public class WeatherTodayEntity {
     public String getCloud() {
         return cloud;
     }
-
 }

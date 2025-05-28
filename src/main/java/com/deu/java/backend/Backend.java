@@ -40,6 +40,8 @@ public class Backend {
             ctx.attribute("em", em);
         });
 
+        // 버스 노선 정보
+        //app.get("/api/v1/bus/route/{routeId}", busController::handleGetBusInfo);
         // 정류장별 도착 정보 (DB에서 조회)
         app.get("/api/v1/bus/stop/arrival", arrivalController::handleGetArrivalInfo);
         // 축제 정보
@@ -70,6 +72,8 @@ public class Backend {
         BusArrivalServiceImpl busArrivalService = new BusArrivalServiceImpl(apiClient);
         BusArrivalController busArrivalController = new BusArrivalController(busArrivalService);
 
+        // BusServiceFactory busServiceFactory = em -> new BusServiceImpl(new BusRepositoryImpl(em));
+        //BusController busController = new BusController(busServiceFactory);
 
         // 행사 실시간 부분
         FestivalService festService = new FestivalServiceImpl();
@@ -88,7 +92,10 @@ public class Backend {
 
 
         // Javalin 서버 시작
+        //Javalin app = createApp(busArrivalController, busController, festController, dormMealController, weatherController);
+
         Javalin app = createApp(busArrivalController, festController, dormMealController, weatherController);
+
         app.start(7000);
 
         // 예최 처리

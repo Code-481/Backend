@@ -2,6 +2,7 @@ package com.deu.java.backend.Weather.service;
 
 import com.deu.java.backend.Weather.DTO.WeatherTodayDTO;
 import com.deu.java.backend.Weather.DTO.WeatherWeekDTO;
+import com.deu.java.backend.Weather.entity.WeatherTodayEntity;
 import com.deu.java.backend.Weather.entity.WeatherWeekEntity;
 import com.deu.java.backend.apiClient.WeatherApiClient;
 import com.deu.java.backend.Weather.repository.WeatherTodayRepository;
@@ -34,7 +35,7 @@ public class WeatherServiceImpl implements WeatherService {
         Runnable updateTask = () -> {
             try {
                 System.out.println("1시간마다 오늘 날씨 정보 갱신 실행: " + LocalDateTime.now());
-                WeatherWeekEntity.WeatherTodayEntity apiData = apiClient.fetchTodayWeather();
+                WeatherTodayEntity apiData = apiClient.fetchTodayWeather();
                 todayRepo.clearTodayWeather();
                 todayRepo.save(apiData);
                 System.out.println("오늘 날씨 정보 갱신 완료: " + LocalDateTime.now());
@@ -55,7 +56,7 @@ public class WeatherServiceImpl implements WeatherService {
                 LocalDate endDate = today.plusDays(6);
                 weekRepo.clearWeekWeather(today, endDate);
                 List<WeatherWeekDTO> apiDTOs = apiClient.fetchWeekWeather();
-                List<com.deu.java.backend.Weather.entity.WeatherTodayEntity.WeatherWeekEntity> apiData = convertDtoToEntity(apiDTOs);
+                List<WeatherWeekEntity> apiData = convertDtoToEntity(apiDTOs);
                 weekRepo.saveAll(apiData);
                 System.out.println("주간 날씨 정보 갱신 완료: " + LocalDateTime.now());
             } catch (Exception e) {
@@ -66,15 +67,15 @@ public class WeatherServiceImpl implements WeatherService {
         scheduler.scheduleAtFixedRate(updateTask, 0, 3, TimeUnit.HOURS);
     }
 
-    private List<WeatherWeekDTO> convertToWeekDTO(List<com.deu.java.backend.Weather.entity.WeatherTodayEntity.WeatherWeekEntity> entities) {
+    private List<WeatherWeekDTO> convertToWeekDTO(List<WeatherWeekEntity> entities) {
         return entities.stream()
                 .map(e -> new WeatherWeekDTO(e.getDate(), e.getMinTemperature(), e.getMaxTemperature(), e.getSky(), e.getCloud()))
                 .toList();
     }
 
-    private List<com.deu.java.backend.Weather.entity.WeatherTodayEntity.WeatherWeekEntity> convertDtoToEntity(List<WeatherWeekDTO> dtoList) {
+    private List<WeatherWeekEntity> convertDtoToEntity(List<WeatherWeekDTO> dtoList) {
         return dtoList.stream()
-                .map(dto -> new com.deu.java.backend.Weather.entity.WeatherTodayEntity.WeatherWeekEntity(
+                .map(dto -> new WeatherWeekEntity(
                         LocalDate.parse(dto.getDate()),
                         dto.getMinTemperature(),
                         dto.getMaxTemperature(),
@@ -87,11 +88,11 @@ public class WeatherServiceImpl implements WeatherService {
     @Override
     public WeatherTodayDTO getTodayWeather() {
         LocalDate today = LocalDate.now();
-        WeatherWeekEntity.WeatherTodayEntity cached = todayRepo.findLatestAnnounceTimeToday(today);
+        WeatherTodayEntity cached = todayRepo.findLatestAnnounceTimeToday(today);
         if (cached != null) {
             return new WeatherTodayDTO(cached.getDate(), cached.getTemperature(), cached.getSky(), cached.getCloud());
         }
-        WeatherWeekEntity.WeatherTodayEntity apiData = apiClient.fetchTodayWeather();
+        WeatherTodayEntity apiData = apiClient.fetchTodayWeather();
         todayRepo.clearTodayWeather();
         todayRepo.save(apiData);
         return new WeatherTodayDTO(apiData.getDate(), apiData.getTemperature(), apiData.getSky(), apiData.getCloud());
@@ -101,12 +102,12 @@ public class WeatherServiceImpl implements WeatherService {
     public List<WeatherWeekDTO> getWeekWeather() {
         LocalDate today = LocalDate.now();
         LocalDate endDate = today.plusDays(6);
-        List<com.deu.java.backend.Weather.entity.WeatherTodayEntity.WeatherWeekEntity> cached = weekRepo.findWeekWeather(today, endDate);
+        List<WeatherWeekEntity> cached = weekRepo.findWeekWeather(today, endDate);
         if (!cached.isEmpty()) {
             return convertToWeekDTO(cached);
         }
         List<WeatherWeekDTO> apiDTOs = apiClient.fetchWeekWeather();
-        List<com.deu.java.backend.Weather.entity.WeatherTodayEntity.WeatherWeekEntity> entities = convertDtoToEntity(apiDTOs);
+        List<WeatherWeekEntity> entities = convertDtoToEntity(apiDTOs);
         weekRepo.clearWeekWeather(today, endDate);
         weekRepo.saveAll(entities);
         return apiDTOs;
