@@ -17,7 +17,7 @@ public class BusanBimsApiClient {
     private final OkHttpClient client = new OkHttpClient();
 
     public List<BusArrivalDto> fetchArrivalInfo(String bstopid) {
-        String url = "https://koreapi.powerinmd.com/6260000/BusanBIMS/stopArrByBstopid?serviceKey=" + API_KEY + "&bstopid=" + bstopid;
+        String url = "http://apis.data.go.kr/6260000/BusanBIMS/stopArrByBstopid?serviceKey=" + API_KEY + "&bstopid=" + bstopid;
         Request request = new Request.Builder().url(url).build();
         try (Response response = client.newCall(request).execute()) {
             if (response.isSuccessful()) {
