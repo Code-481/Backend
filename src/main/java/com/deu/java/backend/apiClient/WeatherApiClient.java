@@ -26,10 +26,10 @@ public class WeatherApiClient {
 
     static Dotenv dotenv = Dotenv.configure().ignoreIfMalformed().ignoreIfMissing().load();
     private static final String todayWeatherKey = dotenv.get("TODAY_WEATHER_API_KEY");
-    private static final String TODAY_WEATHER_URL = "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtFcst";
+    private static final String TODAY_WEATHER_URL = "https://koreapi.powerinmd.com/1360000/VilageFcstInfoService_2.0/getUltraSrtFcst";
     private static final String weekWeatherKey = dotenv.get("WEEK_WEATHER_API_KEY");
-    private static final String WEEKLY_WEATHER_C_URL = "https://apihub.kma.go.kr/api/typ01/url/fct_afs_wc.php?reg=11H20201&tmfc=0&disp=1&help=0&authKey=" + weekWeatherKey;
-    private static final String WEEKLY_WEATHER_L_URL = "https://apihub.kma.go.kr/api/typ01/url/fct_afs_wl.php?reg=11H20000&tmfc=0&disp=1&help=0&authKey=" + weekWeatherKey;
+    private static final String WEEKLY_WEATHER_C_URL = "https://koreapi.powerinmd.com/api/typ01/url/fct_afs_wc.php?reg=11H20201&tmfc=0&disp=1&help=0&authKey=" + weekWeatherKey;
+    private static final String WEEKLY_WEATHER_L_URL = "https://koreapi.powerinmd.com/api/typ01/url/fct_afs_wl.php?reg=11H20000&tmfc=0&disp=1&help=0&authKey=" + weekWeatherKey;
 
     private String sendGetRequest(String urlStr) throws Exception {
         URL url = new URL(urlStr);
