@@ -11,6 +11,8 @@ import com.deu.java.backend.apiClient.WeatherApiClient;
 import com.deu.java.backend.dormmeal.controller.DormMealController;
 import com.deu.java.backend.dormmeal.scheduler.MealDataScheduler;
 import com.deu.java.backend.dormmeal.service.DormMealService;
+import com.deu.java.backend.school.controller.AcademicScheduleController;
+import com.deu.java.backend.school.service.AcademicScheduleService;
 import io.javalin.Javalin;
 import jakarta.persistence.EntityManager;
 
@@ -30,8 +32,8 @@ public class Backend {
             BusArrivalController arrivalController,
             FestivalController festivalController,
             DormMealController dormMealController,
-            WeatherController weatherController
-    ) {
+            WeatherController weatherController,
+            AcademicScheduleController controller) {
         Javalin app = Javalin.create();
 
         // 실행 전
@@ -40,8 +42,6 @@ public class Backend {
             ctx.attribute("em", em);
         });
 
-        // 버스 노선 정보
-        //app.get("/api/v1/bus/route/{routeId}", busController::handleGetBusInfo);
         // 정류장별 도착 정보 (DB에서 조회)
         app.get("/api/v1/bus/stop/arrival", arrivalController::handleGetArrivalInfo);
         // 축제 정보
@@ -52,6 +52,7 @@ public class Backend {
         app.get("/api/v1/weather/today", weatherController::handleTodayWeather);
         // 주간 날씨 정보
         app.get("/api/v1/weather/week", weatherController::handleWeekWeather);
+
 
         // 실행 후
         app.after(ctx -> {
@@ -72,8 +73,9 @@ public class Backend {
         BusArrivalServiceImpl busArrivalService = new BusArrivalServiceImpl(apiClient);
         BusArrivalController busArrivalController = new BusArrivalController(busArrivalService);
 
-        // BusServiceFactory busServiceFactory = em -> new BusServiceImpl(new BusRepositoryImpl(em));
-        //BusController busController = new BusController(busServiceFactory);
+        //학교 이벤트 부분
+        AcademicScheduleService service = new AcademicScheduleService();
+        AcademicScheduleController controller = new AcademicScheduleController(service);
 
         // 행사 실시간 부분
         FestivalService festService = new FestivalServiceImpl();
@@ -91,10 +93,7 @@ public class Backend {
         WeatherController weatherController = new WeatherController(weatherService);
 
 
-        // Javalin 서버 시작
-        //Javalin app = createApp(busArrivalController, busController, festController, dormMealController, weatherController);
-
-        Javalin app = createApp(busArrivalController, festController, dormMealController, weatherController);
+        Javalin app = createApp(busArrivalController, festController, dormMealController, weatherController, controller);
 
         app.start(7000);
 
@@ -109,7 +108,7 @@ public class Backend {
         BusArrivalScheduler busArrivalScheduler = new BusArrivalScheduler(busArrivalService);
         busArrivalScheduler.startScheduling();
         MealDataScheduler mealDataScheduler = new MealDataScheduler(dormMealService);
-        //mealDataScheduler.startMidnightScheduler();
+        mealDataScheduler.startMidnightScheduler();
 
         // 종료 시 리소스 정리
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
