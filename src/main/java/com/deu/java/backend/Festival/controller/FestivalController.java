@@ -1,19 +1,21 @@
 package com.deu.java.backend.Festival.controller;
 
+import com.deu.java.backend.Festival.DTO.FestivalDto;
 import com.deu.java.backend.Festival.service.FestivalService;
-import com.deu.java.backend.Festival.DTO.FestivalDTO;
-import io.javalin.http.Context;
+
+import javax.naming.Context;
 import java.util.List;
 
 public class FestivalController {
-    private final FestivalService festivalService;
+    private final FestivalService festivalService = new FestivalService();
 
-    public FestivalController(FestivalService festivalService) {
-        this.festivalService = festivalService;
-    }
-
-    public void handleGetFestivalInfo(Context ctx) {
-        List<FestivalDTO> festivalList = festivalService.getFestivalInfo();    
-        ctx.json(festivalList);
+    // 반드시 io.javalin.http.Context 사용!
+    public void getFestivalsAsJson(io.javalin.http.Context ctx) {
+        try {
+            List<FestivalDto> festivals = festivalService.getFestivals();
+            ctx.json(festivals);
+        } catch (Exception e) {
+            ctx.status(500).result("Error: " + e.getMessage());
+        }
     }
 }

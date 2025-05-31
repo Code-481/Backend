@@ -22,7 +22,6 @@ import com.deu.java.backend.Bus.service.BusArrivalServiceImpl;
 import com.deu.java.backend.Bus.scheduler.BusArrivalScheduler;
 import com.deu.java.backend.Festival.controller.FestivalController;
 import com.deu.java.backend.Festival.service.FestivalService;
-import com.deu.java.backend.Festival.service.FestivalServiceImpl;
 import com.deu.java.backend.apiClient.BusanBimsApiClient;
 import jakarta.persistence.EntityManagerFactory;
 
@@ -45,7 +44,7 @@ public class Backend {
         // 정류장별 도착 정보 (DB에서 조회)
         app.get("/api/v1/bus/stop/arrival", arrivalController::handleGetArrivalInfo);
         // 축제 정보
-        app.get("/api/v1/festival/info", festivalController::handleGetFestivalInfo);
+        app.get("/api/v1/festival/info", festivalController::getFestivalsAsJson);
         //학식 정보 파라미터 place
         app.get("/api/v1/univ/foods", dormMealController::handleGetDormMealInfo);
         // 오늘 날씨 정보
@@ -78,8 +77,7 @@ public class Backend {
         AcademicScheduleController controller = new AcademicScheduleController(service);
 
         // 행사 실시간 부분
-        FestivalService festService = new FestivalServiceImpl();
-        FestivalController festController = new FestivalController(festService);
+        FestivalController festivalController = new FestivalController();
 
         // 우리가 좋아하는 학식 기숙사 파싱하는 부분
         DormMealService dormMealService = new DormMealService();
@@ -93,7 +91,7 @@ public class Backend {
         WeatherController weatherController = new WeatherController(weatherService);
 
 
-        Javalin app = createApp(busArrivalController, festController, dormMealController, weatherController, controller);
+        Javalin app = createApp(busArrivalController, festivalController, dormMealController, weatherController, controller);
 
         app.start(7000);
 
