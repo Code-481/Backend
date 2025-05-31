@@ -4,33 +4,37 @@ import com.opencsv.bean.CsvBindByName;
 
 public class FestivalDTO {
 
-    public FestivalDTO(String id, String name, String startDate, String endDate, String address, String description) {
+    public FestivalDTO(String id, String name, String startDate, String endDate, String address, String description, String imageUrl) {
         this.id = id;
         this.name = name;
         this.startDate = startDate;
         this.endDate = endDate;
         this.address = address;
         this.description = description;
+        this.imageUrl = imageUrl;
     }
     
-    @CsvBindByName(column = "ID")
+    @CsvBindByName(column = "콘텐츠ID")
     private String id;
 
-    @CsvBindByName(column = "명칭")
+    @CsvBindByName(column = "제목")
     private String name;
 
-     @CsvBindByName(column = "행사시작일")
+     @CsvBindByName(column = "이용요일 및 시간")
     private String startDate;
      
-    @CsvBindByName(column = "행사종료일")
+    @CsvBindByName(column = "연락처")
     private String endDate;
     
-    @CsvBindByName(column = "행사주소")
+    @CsvBindByName(column = "주소")
     private String address;
     
-    @CsvBindByName(column = "개요")
+    @CsvBindByName(column = "상세내요")
     private String description;
-    
+
+    @CsvBindByName(column = "썸네일이미지URL")
+    private String imageUrl;
+
     public String getId() {
         return id;
     }
