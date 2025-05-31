@@ -138,38 +138,46 @@ public class WeatherApiClient {
                 throw new RuntimeException("기상청 API 응답이 JSON이 아님");
             }
 
-
             JSONObject json = new JSONObject(sb.toString());
             JSONArray items = json.getJSONObject("response")
                     .getJSONObject("body")
                     .getJSONObject("items")
                     .getJSONArray("item");
 
-            String targetFcstDate = getTodayStr();
-            String targetFcstTime = getNearestFcstTime();
-
-            String sky = null, temperatureStr = null, cloud = null;
+            // category별 첫번째 데이터만 저장
+            Map<String, JSONObject> firstItemByCategory = new HashMap<>();
 
             for (int i = 0; i < items.length(); i++) {
                 JSONObject item = items.getJSONObject(i);
-                // 반드시 키 존재 여부 확인
-                if (!item.has("fcstDate") || !item.has("fcstTime") || !item.has("category")) continue;
+                if (!item.has("category")) continue;
                 String category = item.getString("category");
-                String fcstDate = item.getString("fcstDate");
-                String fcstTime = item.getString("fcstTime");
-                String fcstValue = item.getString("fcstValue");
-                if (fcstDate.equals(targetFcstDate) && fcstTime.equals(targetFcstTime)) {
-
-                    switch (category) {
-                        case "T1H": temperatureStr = fcstValue; break;
-                        case "SKY": sky = fcstValue; break;
-                        case "REH": cloud = fcstValue; break;
-                    }
+                // category별로 첫 번째 값만 저장
+                if (!firstItemByCategory.containsKey(category)) {
+                    firstItemByCategory.put(category, item);
                 }
             }
+
+            // 필요한 category만 추출 (예: T1H, SKY, REH)
+            String temperatureStr = null, sky = null, cloud = null;
+            if (firstItemByCategory.containsKey("T1H")) {
+                temperatureStr = firstItemByCategory.get("T1H").getString("fcstValue");
+            }
+            if (firstItemByCategory.containsKey("SKY")) {
+                sky = firstItemByCategory.get("SKY").getString("fcstValue");
+            }
+            if (firstItemByCategory.containsKey("REH")) {
+                cloud = firstItemByCategory.get("REH").getString("fcstValue");
+            }
+
             int temperature = (temperatureStr != null && !temperatureStr.isEmpty()) ? (int) Double.parseDouble(temperatureStr) : -999;
             sky = (sky != null) ? sky : "";
             cloud = (cloud != null) ? cloud : "";
+
+            // 첫 번째 데이터의 fcstDate 사용 (없으면 빈 문자열)
+            String targetFcstDate = "";
+            if (!firstItemByCategory.isEmpty()) {
+                targetFcstDate = firstItemByCategory.values().iterator().next().getString("fcstDate");
+            }
 
             return new WeatherTodayEntity(targetFcstDate, temperature, sky, cloud);
 
