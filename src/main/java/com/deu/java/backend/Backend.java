@@ -11,7 +11,7 @@ import com.deu.java.backend.apiClient.WeatherApiClient;
 import com.deu.java.backend.dormmeal.controller.DormMealController;
 import com.deu.java.backend.dormmeal.scheduler.MealDataScheduler;
 import com.deu.java.backend.dormmeal.service.DormMealService;
-import com.deu.java.backend.school.controller.AcademicScheduleController;
+import com.deu.java.backend.school.DTO.AcademicScheduleDTO;
 import com.deu.java.backend.school.service.AcademicScheduleService;
 import io.javalin.Javalin;
 import jakarta.persistence.EntityManager;
@@ -31,8 +31,7 @@ public class Backend {
             BusArrivalController arrivalController,
             FestivalController festivalController,
             DormMealController dormMealController,
-            WeatherController weatherController,
-            AcademicScheduleController controller) {
+            WeatherController weatherController) {
         Javalin app = Javalin.create();
 
         // 실행 전
@@ -51,7 +50,11 @@ public class Backend {
         app.get("/api/v1/weather/today", weatherController::handleTodayWeather);
         // 주간 날씨 정보
         app.get("/api/v1/weather/week", weatherController::handleWeekWeather);
-
+        app.get("/api/v1/academic-schedule", ctx -> {
+            AcademicScheduleService scheduleServic = new AcademicScheduleService();
+            AcademicScheduleDTO schedule = scheduleServic.get2025Schedule();
+            ctx.json(schedule);
+        });
 
         // 실행 후
         app.after(ctx -> {
@@ -72,9 +75,7 @@ public class Backend {
         BusArrivalServiceImpl busArrivalService = new BusArrivalServiceImpl(apiClient);
         BusArrivalController busArrivalController = new BusArrivalController(busArrivalService);
 
-        //학교 이벤트 부분
-        AcademicScheduleService service = new AcademicScheduleService();
-        AcademicScheduleController controller = new AcademicScheduleController(service);
+
 
         // 행사 실시간 부분
         FestivalController festivalController = new FestivalController();
@@ -91,7 +92,7 @@ public class Backend {
         WeatherController weatherController = new WeatherController(weatherService);
 
 
-        Javalin app = createApp(busArrivalController, festivalController, dormMealController, weatherController, controller);
+        Javalin app = createApp(busArrivalController, festivalController, dormMealController, weatherController);
 
         app.start(7000);
 
