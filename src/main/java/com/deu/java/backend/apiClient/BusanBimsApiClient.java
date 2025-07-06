@@ -11,25 +11,39 @@ import org.json.XML;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
-import java.util.concurrent.ExecutorService;
 
 public class BusanBimsApiClient {
 
     Dotenv dotenv = Dotenv.configure().ignoreIfMalformed().ignoreIfMissing().load();
-    private final String API_KEY = dotenv.get("BUSID_BUSID_API_KEY");;
+    private final String API_KEY = dotenv.get("BUSID_BUSID_API_KEY");
     private final OkHttpClient client = new OkHttpClient();
+    private final String pythonApiUrl =  dotenv.get("PYTHON_AI_SERVER_URL");
 
     public List<BusArrivalDto> fetchArrivalInfo(String bstopid) {
+
         String url = "http://apis.data.go.kr/6260000/BusanBIMS/stopArrByBstopid?serviceKey=" + API_KEY + "&bstopid=" + bstopid;
         Request request = new Request.Builder().url(url).build();
+        System.out.println("데이터 불려오고 있는중 " + bstopid);
         try (Response response = client.newCall(request).execute()) {
             if (response.isSuccessful()) {
                 String xmlResponse = response.body().string();
-                return parseArrivalInfoFromXml(xmlResponse, bstopid);
+                try {
+                    System.out.println(pythonApiUrl);
+                    RestTemplate restTemplate = new RestTemplate();
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.setContentType(MediaType.APPLICATION_JSON);
+                    Map<String, String> requestBody = Collections.singletonMap("xml_data", xmlResponse);
+                    HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
+                    String urls = pythonApiUrl + "/predict_from_xml";
+                    restTemplate.postForEntity(urls, requestEntity, String.class);
+                } catch (Exception e) {
+                    System.err.println("AI 서버 호출 중 예외 발생: " + e.getMessage());
+                } finally {
+                    return parseArrivalInfoFromXml(xmlResponse, bstopid);
+                }
             } else {
                 throw new RuntimeException("Failed to fetch arrival info: " + response.message());
             }

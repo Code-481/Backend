@@ -3,80 +3,25 @@ package com.deu.java.backend.Bus.service;
 import com.deu.java.backend.Bus.dto.BusArrivalDto;
 import com.deu.java.backend.apiClient.BusanBimsApiClient;
 import com.deu.java.backend.config.JpaUtil;
-import io.github.cdimascio.dotenv.Dotenv;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.Query;
 import org.json.JSONObject;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
-
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
+import java.util.Objects;
 
 public class BusArrivalServiceImpl implements BusArrivalService {
 
     private final BusanBimsApiClient apiClient;
-    private final ExecutorService executor;
-    private final String pythonApiUrl;
 
-    public BusArrivalServiceImpl(BusanBimsApiClient apiClient, ExecutorService executor) {
+    public BusArrivalServiceImpl(BusanBimsApiClient apiClient) {
         this.apiClient = apiClient;
-        this.executor = executor; // 3. 전달받은 인스턴스를 멤버 변수에 할당.
-
-        Dotenv dotenv = Dotenv.configure().ignoreIfMalformed().ignoreIfMissing().load();
-        this.pythonApiUrl = dotenv.get("PYTHON_AI_SERVER_URL");
-        if (this.pythonApiUrl == null) {
-            throw new IllegalStateException("PYTHON_AI_SERVER_URL is not set in .env file.");
-        }
     }
 
-    public List<BusArrivalDto> getBusArrivalInfo(String bstopid) {
-        // apiClient를 통해 버스 도착 정보를 가져옴
-        List<BusArrivalDto> arrivalInfo = apiClient.fetchArrivalInfo(bstopid);
-
-        // API 조회가 성공적으로 끝나면 (예외가 발생하지 않으면),
-        // 백그라운드에서 파이썬 서버에 학습 데이터 수집을 요청합니다.
-        if (arrivalInfo != null) {
-            triggerPythonLearning(bstopid);
-        }
-
-        return arrivalInfo;
-    }
-
-    public void triggerPythonLearning(String stationId) {
-        // 4. 초기화된 멤버 변수 'executor'를 사용하여 비동기 작업 제출
-        executor.submit(() -> {
-            System.out.println("AI 서버에 학습 데이터 수집 요청 시작 (정류소 ID: " + stationId + ")");
-            try {
-                RestTemplate restTemplate = new RestTemplate();
-                HttpHeaders headers = new HttpHeaders();
-                headers.setContentType(MediaType.APPLICATION_JSON);
-
-                Map<String, String> requestBody = Collections.singletonMap("station_id", stationId);
-                HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
-
-                String url = pythonApiUrl + "/collect_and_learn";
-                ResponseEntity<String> response = restTemplate.postForEntity(url, requestEntity, String.class);
-
-                if (response.getStatusCode().is2xxSuccessful()) {
-                    System.out.println("AI 서버에 요청 성공: " + response.getBody());
-                } else {
-                    System.err.println("AI 서버에 요청 실패: " + response.getStatusCode());
-                }
-            } catch (Exception e) {
-                System.err.println("AI 서버 호출 중 예외 발생: " + e.getMessage());
-            }
-        });
-    }
     @Override
     public void saveArrivals(String bstopid, List<BusArrivalDto> arrivals) {
         System.out.println("정류소 " + bstopid + " arrivals size: " + arrivals.size());

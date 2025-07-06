@@ -24,8 +24,8 @@ public class BusArrivalScheduler {
             "172520303", "163980102", "172520302", "163980101", "172520301");
 
     // 운행 시간 설정 (한국 시간 기준)
-    private final LocalTime startTime = LocalTime.of(5, 30); // 오전 5시 30분 부터 다시 실행
-    private final LocalTime endTime = LocalTime.of(23, 10); // 오후 11시 10 분까지 다시 중단
+    private final LocalTime startTime = LocalTime.of(6, 30);
+    private final LocalTime endTime = LocalTime.of(11, 0);
 
     public BusArrivalScheduler(BusArrivalService busArrivalService) {
         this.busArrivalService = busArrivalService;
@@ -33,7 +33,7 @@ public class BusArrivalScheduler {
     }
 
     public void startScheduling() {
-        // 1분마다 실행되는 작업 스케줄링
+        // 2분마다 실행되는 작업 스케줄링
         scheduler.scheduleAtFixedRate(this::fetchAndSaveBusArrivals, 0, 1, TimeUnit.MINUTES);
     }
 
