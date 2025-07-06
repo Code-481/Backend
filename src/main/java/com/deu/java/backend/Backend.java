@@ -25,6 +25,9 @@ import com.deu.java.backend.Festival.service.FestivalService;
 import com.deu.java.backend.apiClient.BusanBimsApiClient;
 import jakarta.persistence.EntityManagerFactory;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class Backend {
 
     public static Javalin createApp(
@@ -69,10 +72,12 @@ public class Backend {
     public static void main(String[] args) {
         EntityManagerFactory emf = JpaUtil.getEntityManagerFactory();
 
+        // 파이썬 연동과 같은 비동기 작업을 위한 스레드 풀 생성
+        ExecutorService executorService = Executors.newFixedThreadPool(5);
 
         // 버스 실시간 서비스
         BusanBimsApiClient apiClient = new BusanBimsApiClient();
-        BusArrivalServiceImpl busArrivalService = new BusArrivalServiceImpl(apiClient);
+        BusArrivalServiceImpl busArrivalService = new BusArrivalServiceImpl(apiClient,executorService);
         BusArrivalController busArrivalController = new BusArrivalController(busArrivalService);
 
 

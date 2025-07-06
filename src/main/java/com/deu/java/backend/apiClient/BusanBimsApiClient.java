@@ -8,12 +8,19 @@ import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.XML;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
 import java.util.*;
+import java.util.concurrent.ExecutorService;
 
 public class BusanBimsApiClient {
 
     Dotenv dotenv = Dotenv.configure().ignoreIfMalformed().ignoreIfMissing().load();
-    private final String API_KEY = dotenv.get("BUSID_BUSID_API_KEY");
+    private final String API_KEY = dotenv.get("BUSID_BUSID_API_KEY");;
     private final OkHttpClient client = new OkHttpClient();
 
     public List<BusArrivalDto> fetchArrivalInfo(String bstopid) {
