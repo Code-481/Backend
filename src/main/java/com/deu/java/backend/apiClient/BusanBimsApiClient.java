@@ -30,6 +30,7 @@ public class BusanBimsApiClient {
         try (Response response = client.newCall(request).execute()) {
             if (response.isSuccessful()) {
                 String xmlResponse = response.body().string();
+                System.out.println(xmlResponse);
                 try {
                     System.out.println(pythonApiUrl);
                     RestTemplate restTemplate = new RestTemplate();
