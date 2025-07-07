@@ -25,7 +25,7 @@ public class BusArrivalScheduler {
 
     // 운행 시간 설정 (한국 시간 기준)
     private final LocalTime startTime = LocalTime.of(6, 30);
-    private final LocalTime endTime = LocalTime.of(11, 10);
+    private final LocalTime endTime = LocalTime.of(23, 10);
 
     public BusArrivalScheduler(BusArrivalService busArrivalService) {
         this.busArrivalService = busArrivalService;
