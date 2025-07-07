@@ -25,7 +25,7 @@ public class BusArrivalScheduler {
 
     // 운행 시간 설정 (한국 시간 기준)
     private final LocalTime startTime = LocalTime.of(6, 30);
-    private final LocalTime endTime = LocalTime.of(11, 0);
+    private final LocalTime endTime = LocalTime.of(11, 10);
 
     public BusArrivalScheduler(BusArrivalService busArrivalService) {
         this.busArrivalService = busArrivalService;
@@ -34,7 +34,7 @@ public class BusArrivalScheduler {
 
     public void startScheduling() {
         // 2분마다 실행되는 작업 스케줄링
-        scheduler.scheduleAtFixedRate(this::fetchAndSaveBusArrivals, 0, 1, TimeUnit.MINUTES);
+        scheduler.scheduleAtFixedRate(this::fetchAndSaveBusArrivals, 0, 2, TimeUnit.MINUTES);
     }
 
     private void fetchAndSaveBusArrivals() {
