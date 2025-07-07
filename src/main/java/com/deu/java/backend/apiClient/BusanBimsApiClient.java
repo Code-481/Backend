@@ -37,7 +37,7 @@ public class BusanBimsApiClient {
                     headers.setContentType(MediaType.APPLICATION_JSON);
                     Map<String, String> requestBody = Collections.singletonMap("xml_data", xmlResponse);
                     HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
-                    String urls = pythonApiUrl + "/add_data";
+                    String urls = pythonApiUrl + "/add_data_from_xml";
                     restTemplate.postForEntity(urls, requestEntity, String.class);
                 } catch (Exception e) {
                     System.err.println("AI 서버 호출 중 예외 발생: " + e.getMessage());
