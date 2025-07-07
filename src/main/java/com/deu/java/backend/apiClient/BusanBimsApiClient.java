@@ -12,7 +12,21 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestTemplate;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.*;
 
 public class BusanBimsApiClient {
@@ -36,8 +50,14 @@ public class BusanBimsApiClient {
                     RestTemplate restTemplate = new RestTemplate();
                     HttpHeaders headers = new HttpHeaders();
                     headers.setContentType(MediaType.APPLICATION_JSON);
-                    Map<String, String> requestBody = Collections.singletonMap("xml_data", xmlResponse);
+
+                    String arsnoValue = bstopid;
+
+                    String updatedXml = updateXmlWithArsnoAndActualArrive(xmlResponse, arsnoValue);
+
+                    Map<String, String> requestBody = Collections.singletonMap("xml_data", updatedXml);
                     HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
+
                     String urls = pythonApiUrl + "/add_data_from_xml";
                     restTemplate.postForEntity(urls, requestEntity, String.class);
                 } catch (Exception e) {
@@ -52,6 +72,71 @@ public class BusanBimsApiClient {
             throw new RuntimeException("Error while fetching arrival info: " + e.getMessage(), e);
         }
     }
+
+
+    public String updateXmlWithArsnoAndActualArrive(String xml, String arsno) {
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            InputSource is = new InputSource(new StringReader(xml));
+            Document doc = builder.parse(is);
+
+            NodeList items = doc.getElementsByTagName("item");
+
+            for (int i = 0; i < items.getLength(); i++) {
+                Element item = (Element) items.item(i);
+
+                // arsno 채우기
+                Node arsnoNode = item.getElementsByTagName("arsno").item(0);
+                if (arsnoNode != null) {
+                    arsnoNode.setTextContent(arsno);
+                } else {
+                    Element newArsno = doc.createElement("arsno");
+                    newArsno.setTextContent(arsno);
+                    item.appendChild(newArsno);
+                }
+
+                // min1 값을 가져와서 actualarrive 초 단위로 추가
+                String min1Str = "";
+                Node min1Node = item.getElementsByTagName("min1").item(0);
+                if (min1Node != null) {
+                    min1Str = min1Node.getTextContent();
+                }
+
+                int actualArriveSec = 0;
+                try {
+                    actualArriveSec = Integer.parseInt(min1Str) * 60; // 분 -> 초 변환
+                } catch (NumberFormatException e) {
+                    actualArriveSec = 0; // 숫자가 아니면 0초로 처리
+                }
+
+                // actualarrive 추가 (있으면 교체, 없으면 새로 추가)
+                NodeList actualNodes = item.getElementsByTagName("actualarrive");
+                if (actualNodes.getLength() > 0) {
+                    actualNodes.item(0).setTextContent(String.valueOf(actualArriveSec));
+                } else {
+                    Element actualNode = doc.createElement("actualarrive");
+                    actualNode.setTextContent(String.valueOf(actualArriveSec));
+                    item.appendChild(actualNode);
+                }
+            }
+
+            // DOM -> String 변환
+            TransformerFactory tf = TransformerFactory.newInstance();
+            Transformer transformer = tf.newTransformer();
+            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+
+            StringWriter writer = new StringWriter();
+            transformer.transform(new DOMSource(doc), new StreamResult(writer));
+            return writer.toString();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return xml; // 실패시 원본 반환
+        }
+    }
+
 
     private List<BusArrivalDto> parseArrivalInfoFromXml(String xmlResponse, String bstopid) throws Exception {
         List<BusArrivalDto> arrivals = new ArrayList<>();
